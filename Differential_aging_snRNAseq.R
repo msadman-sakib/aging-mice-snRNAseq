@@ -85,4 +85,41 @@ p2 <- DimPlot(agingnuclei.combined.sct, reduction = "umap", label = TRUE, repel 
 p1 + p2
 ggsave("plots/young_old_cell_clusters.pdf", height = 5, width = 10)
 
-##---sofar this worked!! got the UMAP plot for old vs young and cell clusters numbers... 
+##---sofar this worked!! got the UMAP plot for old vs young and cell clusters numbers... next, find markers and diff expression
+save.image("TempTillUMAPplots.Rdata")
+
+
+# next, identifying conserved cell type markers ------
+
+# For performing differential expression after integration, we switch back to the original
+# data
+#DefaultAssay(agingnuclei.combined.sct) <- "RNA" ##can be also "integrated", it contains the transformed values..But RNA was used in this tutorial: https://satijalab.org/seurat/archive/v3.1/immune_alignment.html.
+#But it was not changed here in this updated tutorial: https://satijalab.org/seurat/articles/pbmc3k_tutorial.html#finding-differentially-expressed-features-cluster-biomarkers-  ##following this 2nd one..
+
+# find markers for every cluster compared to all remaining cells, report only the positive ones -------
+agingnuclei.markers <- FindAllMarkers(agingnuclei.combined.sct, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25) ##It took 1.5 hours!!!
+
+agingnuclei.markers.top2 = agingnuclei.markers %>%
+                              group_by(cluster) %>%
+                              top_n(n = 2, wt = avg_log2FC) ##seeing top 2 genes in each markers.
+
+save(x=agingnuclei.markers.top2, file="agingnuclei.markers.table.Rdata")
+
+agingnuclei.markers.top = agingnuclei.markers %>% group_by(cluster)
+save(x=agingnuclei.markers.top, file="agingnuclei.markers.tableAll.Rdata")
+
+
+##Now inspecting top genes in each cluster
+top.markers.= agingnuclei.markers %>%
+                group_by(cluster) %>%
+                top_n(n = 1, wt = avg_log2FC)
+##But now it is quite difficult to annotate each clusters. 
+
+# need to use AddModuleScore() function to add the cell type marker genes in the agingnuclei.combined.sct object. 
+
+#example:
+#agingnuclei.combined.sct <- AddModuleScore(agingnuclei.combined.sct,
+ #                             features = list(vector with genes),
+  #                            name="give a name that will be used to plot the list")
+
+
