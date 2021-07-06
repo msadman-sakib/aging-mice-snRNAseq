@@ -9,6 +9,7 @@ library(ggplot2)
 library(stringr)
 library(glmGamPoi)
 library(sctransform)
+library(rio)
 
 
 # Load the dataset
@@ -46,7 +47,7 @@ agingnuclei.list  <- lapply(X = agingnuclei.list , FUN = function(x) {
 features <- SelectIntegrationFeatures(object.list = agingnuclei.list, nfeatures = 3000)
 agingnuclei.list <- PrepSCTIntegration(object.list = agingnuclei.list, anchor.features = features)
 save.image("TempTilsctransformNorm.Rdata")
-## sofar this worked -----
+## so far this worked -----
 
 ##for rpca, need to run pca individuall first
 agingnuclei.list <- lapply(X = agingnuclei.list, FUN = function(x) {
@@ -118,7 +119,7 @@ top.markers= agingnuclei.markers %>%
 ###test
 FeaturePlot(agingnuclei.combined.sct, features = top.markers %>% pull(gene) %>% .[1:6] , min.cutoff = "q9")
 
-FeaturePlot(agingnuclei.combined.sct, features = c("Npas4"), min.cutoff = "q1")
+FeaturePlot(agingnuclei.combined.sct, features = c("Mbp"), min.cutoff = "q1")
 
 
 
@@ -134,5 +135,40 @@ FeaturePlot(agingnuclei.combined.sct, features = c("Npas4"), min.cutoff = "q1")
 
 DefaultAssay(agingnuclei.combined.sct) <- "RNA"
 agingnuclei.markers.RNA <- FindAllMarkers(agingnuclei.combined.sct, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25) #Now it is showing longer minutes for each cluster...around 2.5hours!
+save(x=agingnuclei.markers.RNA, file="agingnuclei.markers.RNA.took3hours.Rdata")
+
+
+agingnuclei.markers.RNA.top2 = agingnuclei.markers.RNA %>%
+  group_by(cluster) %>%
+  top_n(n = 2, wt = avg_log2FC) ##seeing top 2 genes in each markers.
+export(agingnuclei.markers.RNA.top2, "agingnuclei.markers.top2.xlsx")
+
+agingnuclei.markers.RNA.topall = agingnuclei.markers.RNA %>% group_by(cluster)
+export(agingnuclei.markers.RNA.topall, "agingnuclei.markers.tableAll.xlsx")
+
+#testing some gene expressions plots
+FeaturePlot(agingnuclei.combined.sct, features = c("Mog", "Rbfox3", "Gfap", "Icam1"), min.cutoff = "q1")
+
+plots <- VlnPlot(agingnuclei.combined.sct, features = c("Mog", "Rbfox3", "Gfap", "Icam1"), split.by = "ident.conditions", group.by = "seurat_clusters", pt.size = 0, combine = FALSE)
+wrap_plots(plots = plots, ncol = 1)
+
+##these are okay for few genes. But need a heatmap for more genes
+##since in defaultassay = RNA, the scale.data is empty, need to do it.
+
+agingnuclei.combined.sct = NormalizeData(agingnuclei.combined.sct) ##this is happening in the RNA assay.
+all.genes <- rownames(agingnuclei.combined.sct)
+agingnuclei.combined.sct <- ScaleData(agingnuclei.combined.sct, features = all.genes) 
+
+
+agingnuclei.markers.RNA %>%
+  group_by(cluster) %>%
+  top_n(n = 3, wt = avg_log2FC) -> top3 ##here, I made Top1, top5 manually and generated the plots. But top 3 heatmap looks good. 
+
+pdf("plots/top3_byclusterMarker.pdf", width = 27, height = 10)
+DoHeatmap(agingnuclei.combined.sct, features = top3$gene) + NoLegend()
+dev.off()
+
+save.image("TemptillClusterPlots.Rdata")
+# Cell type annotation, then subsetting neurons and glia for diff analysis -----
 
 
