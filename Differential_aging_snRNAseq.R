@@ -44,9 +44,7 @@ agingnuclei.list  <- lapply(X = agingnuclei.list , FUN = function(x) {
 
 ##pre-requisites befor integration/anchoring
 features <- SelectIntegrationFeatures(object.list = agingnuclei.list, nfeatures = 3000)
-
 agingnuclei.list <- PrepSCTIntegration(object.list = agingnuclei.list, anchor.features = features)
-
 save.image("TempTilsctransformNorm.Rdata")
 ## sofar this worked -----
 
@@ -97,6 +95,9 @@ save.image("TempTillUMAPplots.Rdata")
 #But it was not changed here in this updated tutorial: https://satijalab.org/seurat/articles/pbmc3k_tutorial.html#finding-differentially-expressed-features-cluster-biomarkers-  ##following this 2nd one..
 
 # find markers for every cluster compared to all remaining cells, report only the positive ones -------
+
+######Took 1.5 hours for this next line!!!
+DefaultAssay(agingnuclei.combined.sct) <- "RNA"
 agingnuclei.markers <- FindAllMarkers(agingnuclei.combined.sct, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25) ##It took 1.5 hours!!!
 
 agingnuclei.markers.top2 = agingnuclei.markers %>%
@@ -110,9 +111,17 @@ save(x=agingnuclei.markers.top, file="agingnuclei.markers.tableAll.Rdata")
 
 
 ##Now inspecting top genes in each cluster
-top.markers.= agingnuclei.markers %>%
+top.markers= agingnuclei.markers %>%
                 group_by(cluster) %>%
                 top_n(n = 1, wt = avg_log2FC)
+
+###test
+FeaturePlot(agingnuclei.combined.sct, features = top.markers %>% pull(gene) %>% .[1:6] , min.cutoff = "q9")
+
+FeaturePlot(agingnuclei.combined.sct, features = c("Npas4"), min.cutoff = "q1")
+
+
+
 ##But now it is quite difficult to annotate each clusters. 
 
 # need to use AddModuleScore() function to add the cell type marker genes in the agingnuclei.combined.sct object. 
@@ -120,6 +129,10 @@ top.markers.= agingnuclei.markers %>%
 #example:
 #agingnuclei.combined.sct <- AddModuleScore(agingnuclei.combined.sct,
  #                             features = list(vector with genes),
-  #                            name="give a name that will be used to plot the list")
+  #                            name="give a name that will be used to plot the list, like neurons, OPC, microglia etc...")
+
+
+DefaultAssay(agingnuclei.combined.sct) <- "RNA"
+agingnuclei.markers.RNA <- FindAllMarkers(agingnuclei.combined.sct, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25) #Now it is showing longer minutes for each cluster...around 2.5hours!
 
 
