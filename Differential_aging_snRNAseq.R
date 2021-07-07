@@ -1,5 +1,5 @@
 if (!require("pacman")) install.packages("pacman") 
-pacman::p_load(dplyr, Seurat, patchwork,ggplot2,stringr,BiocManager ) #p_load installs all those packages if they are not installed, after updating R.
+pacman::p_load(dplyr, Seurat, patchwork,ggplot2,stringr,BiocManager,glmGamPoi) #p_load installs all those packages if they are not installed, after updating R.
 
 #library(BiocManager)
 library(dplyr)
@@ -47,6 +47,7 @@ agingnuclei.list  <- lapply(X = agingnuclei.list , FUN = function(x) {
 features <- SelectIntegrationFeatures(object.list = agingnuclei.list, nfeatures = 3000)
 agingnuclei.list <- PrepSCTIntegration(object.list = agingnuclei.list, anchor.features = features)
 save.image("TempTilsctransformNorm.Rdata")
+
 ## so far this worked -----
 
 ##for rpca, need to run pca individuall first
@@ -169,6 +170,7 @@ DoHeatmap(agingnuclei.combined.sct, features = top3$gene) + NoLegend()
 dev.off()
 
 save.image("TemptillClusterPlots.Rdata")
+
 # Cell type annotation, then subsetting neurons and glia for diff analysis -----
 
 
