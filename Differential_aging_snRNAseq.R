@@ -127,6 +127,7 @@ FeaturePlot(agingnuclei.combined.sct, features = c("Mbp"), min.cutoff = "q1")
 ##But this is not correct, as it is based on only 3000 genes. I need all genes. Here, for example, I searched for Rbfox3, and it was not there! Therefore, I need to change the DefaultAssay() to "RNA" or "SCT"....
 
 DefaultAssay(agingnuclei.combined.sct) <- "RNA"
+###$!!! Probably need to normalize first, then run the FindAllMarker here!!!!
 agingnuclei.markers.RNA <- FindAllMarkers(agingnuclei.combined.sct, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25) #Now it is showing longer minutes for each cluster...around 2.5hours!
 save(x=agingnuclei.markers.RNA, file="agingnuclei.markers.RNA.took3hours.Rdata")
 
@@ -163,15 +164,18 @@ dev.off()
 
 
 #### but now using sctransform data to find the marker genes. For this, making a new assay for SCT for all genes. Lets see. If not works, then can remove by setting the assay NULL. 
-agingnuclei.combined.sct = SCTransform(agingnuclei.combined.sct, method = "glmGamPoi",assay = "RNA",new.assay.name = "SCTallGenes",return.only.var.genes = F, verbose = T, vars.to.regress = "percent.mt")
+##But I just read that, doing this will fod sure crash as it needs huge memors...one possibility is to run on cluster.
+
+# STILL UNDER DEVELOPMENT, about using SCTransform to scale.data for all genes, then use it for UMAP plot...Maybe I will not need it! -------
+
+ 
+agingnuclei.combined.sct.marker.genes = SCTransform(agingnuclei.combined.sct, method = "glmGamPoi",assay = "RNA",new.assay.name = "SCTallGenes",return.only.var.genes = F, verbose = T, vars.to.regress = "percent.mt")
 
 #set to new assay
-DefaultAssay(agingnuclei.combined.sct) <- "SCTallGenes"
+DefaultAssay(agingnuclei.combined.sct.marker.genes) <- "SCTallGenes"
 
 #find marker genes
-agingnuclei.markers.SCT <- FindAllMarkers(agingnuclei.combined.sct, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25) #Now it is showing longer minutes for each cluster...around 2.5hours!
-
-
+agingnuclei.markers.SCT <- FindAllMarkers(agingnuclei.combined.sct.marker.genes, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25, slot ="scale.data") #Now it is showing longer minutes for each cluster...around 2.5hours!
 
 agingnuclei.markers.SCT %>%
   group_by(cluster) %>%
