@@ -165,8 +165,13 @@ dev.off()
 #### but now using sctransform data to find the marker genes. For this, making a new assay for SCT for all genes. Lets see. If not works, then can remove by setting the assay NULL. 
 agingnuclei.combined.sct = SCTransform(agingnuclei.combined.sct, method = "glmGamPoi",assay = "RNA",new.assay.name = "SCTallGenes",return.only.var.genes = F, verbose = T, vars.to.regress = "percent.mt")
 
+#set to new assay
+DefaultAssay(agingnuclei.combined.sct) <- "SCTallGenes"
 
+#find marker genes
 agingnuclei.markers.SCT <- FindAllMarkers(agingnuclei.combined.sct, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25) #Now it is showing longer minutes for each cluster...around 2.5hours!
+
+
 
 agingnuclei.markers.SCT %>%
   group_by(cluster) %>%
