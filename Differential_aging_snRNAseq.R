@@ -1,3 +1,7 @@
+##Date: 7 July 2021
+#I am pausing this script for today. I need to restart the analysis comprehensively to do marker identification and cell type labelling. Need major update of the code. That's why, will start a new script under the same repo. 
+
+
 if (!require("pacman")) install.packages("pacman") 
 pacman::p_load(dplyr, Seurat, patchwork,ggplot2,stringr,BiocManager,glmGamPoi,sctransform,rio) #p_load installs all those packages if they are not installed, after updating R.
 
@@ -93,6 +97,7 @@ save.image("TempTillUMAPplots.Rdata")
 
 # next, identifying conserved cell type markers ------
 
+# This only got markers among default 3000 variable genes -------
 # For performing differential expression after integration, we switch back to the original
 # data
 #DefaultAssay(agingnuclei.combined.sct) <- "RNA" ##can be also "integrated", it contains the transformed values..But RNA was used in this tutorial: https://satijalab.org/seurat/archive/v3.1/immune_alignment.html.
@@ -101,7 +106,6 @@ save.image("TempTillUMAPplots.Rdata")
 # find markers for every cluster compared to all remaining cells, report only the positive ones -------
 
 ######Took 1.5 hours for this next line!!!
-DefaultAssay(agingnuclei.combined.sct) <- "RNA"
 agingnuclei.markers <- FindAllMarkers(agingnuclei.combined.sct, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25) ##It took 1.5 hours!!!
 
 agingnuclei.markers.top2 = agingnuclei.markers %>%
@@ -125,6 +129,8 @@ FeaturePlot(agingnuclei.combined.sct, features = top.markers %>% pull(gene) %>% 
 FeaturePlot(agingnuclei.combined.sct, features = c("Mbp"), min.cutoff = "q1")
 
 ##But this is not correct, as it is based on only 3000 genes. I need all genes. Here, for example, I searched for Rbfox3, and it was not there! Therefore, I need to change the DefaultAssay() to "RNA" or "SCT"....
+
+# Finding marker correctly with all genes  ------
 
 DefaultAssay(agingnuclei.combined.sct) <- "RNA"
 ###$!!! Probably need to normalize first, then run the FindAllMarker here!!!!
@@ -194,4 +200,7 @@ FeaturePlot(agingnuclei.combined.sct, features = c("Mbp"), min.cutoff = "q1")
 #                             features = list(vector with genes),
 #                            name="give a name that will be used to plot the list, like neurons, OPC, microglia etc...")
 
+ElbowPlot(agingnuclei.combined.sct, ndims = 50) #to see the PCs for selecting for clustering...
 
+##Date: 7 July 2021
+#I am pausing this script for today. I need to restart the analysis comprehensively to do marker identification and cell type labelling. Need major update of the code. That's why, will start a new script under the same repo. 
