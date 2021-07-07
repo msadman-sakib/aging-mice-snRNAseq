@@ -13,7 +13,7 @@ library(rio)
 
 
 # Load the dataset
-agingnuclei.data <- Read10X(data.dir = "filtered_feature_bc_matrix/")
+agingnuclei.data <- Read10X(data.dir = "input-data-Dennis-filtered/")
 
 # Initialize the Seurat object with the raw (non-normalized data).
 agingnuclei <- CreateSeuratObject(counts = agingnuclei.data, project = "agingnuclei80K", names.field = 2, names.delim = "-",min.cells = 3, min.features = 200) #names.field 2 means, the 2nd element after barcode is the sample name, here 1,2,3 is young, 4,5,6,7 is old.
