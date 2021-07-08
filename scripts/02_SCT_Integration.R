@@ -131,6 +131,8 @@ split_seurat$young@assays
 saveRDS(split_seurat, "Rdata/split_seurat.rds")
 
 # Integration using CCA ----------
+## The goal of integration is to ensure that the cell types of one condition/dataset align with the same celltypes of the other conditions/datasets (e.g. control macrophages align with stimulated macrophages).
+
 # Load the split seurat object into the environment if needed
 #split_seurat <- readRDS("data/split_seurat.rds")
 
@@ -144,7 +146,7 @@ split_seurat <- PrepSCTIntegration(object.list = split_seurat,
 
 
 # Now, we are going to perform CCA, find the best buddies or anchors and filter incorrect anchors. This might take half an hour.
-
+#########################################################
 # Find best buddies - can take a while to run
 integ_anchors <- FindIntegrationAnchors(object.list = split_seurat, 
                                         normalization.method = "SCT", 
@@ -154,14 +156,32 @@ integ_anchors <- FindIntegrationAnchors(object.list = split_seurat,
 seurat_integrated <- IntegrateData(anchorset = integ_anchors, 
                                    normalization.method = "SCT")
 
-## The goal of integration is to ensure that the cell types of one condition/dataset align with the same celltypes of the other conditions/datasets (e.g. control macrophages align with stimulated macrophages).
+# Run PCA
+seurat_integrated <- RunPCA(object = seurat_integrated)
+
+# Plot PCA
+PCAPlot(seurat_integrated,
+        split.by = "sample")  
+ggsave("plots/Integrated-PCA.pdf", height = 7, width = 14)
 
 
+# Run UMAP
+seurat_integrated <- RunUMAP(seurat_integrated, 
+                             dims = 1:40,
+                             reduction = "pca")
+
+# Plot UMAP                             
+DimPlot(seurat_integrated)     
+ggsave("plots/Integrated-UMAP.pdf", height = 7, width = 7)
 
 
+# Plot UMAP split by sample
+DimPlot(seurat_integrated,
+        split.by = "sample")
+ggsave("plots/Integrated-UMAP-sidebyside-pdf", height = 7, width = 7)
 
-
-
+# Save integrated seurat object
+saveRDS(seurat_integrated, "results/integrated_seurat.rds")
 
 
 
