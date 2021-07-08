@@ -1,44 +1,48 @@
-if (!require("pacman")) install.packages("pacman") 
-pacman::p_load(dplyr, Seurat, patchwork,ggplot2,stringr,BiocManager,glmGamPoi,sctransform,rio) #p_load installs all those packages if they are not installed, after updating R.
+# Single-cell RNA-seq - normalization
 
-#library(BiocManager)
-library(dplyr)
+# Load libraries
 library(Seurat)
-library(patchwork)
-library(ggplot2)
-library(stringr)
-library(glmGamPoi)
-library(sctransform)
-library(rio)
+library(tidyverse)
+library(RCurl)
+library(cowplot)
+
+#Explore sources of unwanted variation
 
 
-# Load the dataset
-agingnuclei.data <- Read10X(data.dir = "input-data-Dennis-filtered/")
 
-# Initialize the Seurat object with the raw (non-normalized data).
-agingnuclei <- CreateSeuratObject(counts = agingnuclei.data, project = "agingnuclei80K", names.field = 2, names.delim = "-",min.cells = 3, min.features = 200) #names.field 2 means, the 2nd element after barcode is the sample name, here 1,2,3 is young, 4,5,6,7 is old.
 
-# Stash cell identity classes
-agingnuclei[["old.ident"]] <- Idents(object = agingnuclei)
 
-#check old names
-levels(agingnuclei)
 
-# rename to new identity
-agingnuclei <- RenameIdents(agingnuclei, '1' = 'young', '2' = 'young', '3' = 'young', '4' = "old", '5' =  "old", "6" =  "old", "7" =  "old")
 
-#check new names
-levels(agingnuclei)
+# 5. Single-cell RNA-seq: Normalization and regressing out unwanted variation --------
+#Goals:
+#To accurately normalize and scale the gene expression values to account for differences in sequencing depth and overdispersed count values.
+#To identify the most variant genes likely to be indicative of the different cell types present.
 
-# Stash new cell identity classes
-agingnuclei[["ident.conditions"]] <- Idents(object = agingnuclei) ###This is to set young and old conditions in the data frame, inside that seurat object.
+
+#Recommendations:
+
+#Have a good idea of your expectations for the cell types to be present prior to performing the clustering. Know whether you expect cell types of low complexity or higher mitochondrial content AND whether the cells are differentiating
+#Regress out number of UMIs (default using sctransform), mitochondrial content, and cell cycle, if needed and appropriate for experiment, so not to drive clustering downstream
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # Splitting young and old
 agingnuclei.list <- SplitObject(agingnuclei, split.by = "ident.conditions")
 
-# store mitochondrial percentage in object meta data to use in sctransform.
-agingnuclei.list  <- lapply(X = agingnuclei.list , FUN = function(x) {
-  x <- PercentageFeatureSet(x, pattern = "^mt-", col.name = "percent.mt")
-})
 
 ##Normalization by sctransform, using "glmGamPoi" method to make calculations faster. ----
 agingnuclei.list  <- lapply(X = agingnuclei.list , FUN = function(x) {
@@ -105,8 +109,8 @@ save.image("TempTillUMAPplots.Rdata")
 agingnuclei.markers <- FindAllMarkers(agingnuclei.combined.sct, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25) ##It took 1.5 hours!!!
 
 agingnuclei.markers.top2 = agingnuclei.markers %>%
-                              group_by(cluster) %>%
-                              top_n(n = 2, wt = avg_log2FC) ##seeing top 2 genes in each markers.
+  group_by(cluster) %>%
+  top_n(n = 2, wt = avg_log2FC) ##seeing top 2 genes in each markers.
 
 save(x=agingnuclei.markers.top2, file="agingnuclei.markers.table.Rdata")
 
@@ -116,8 +120,8 @@ save(x=agingnuclei.markers.top, file="agingnuclei.markers.tableAll.Rdata")
 
 ##Now inspecting top genes in each cluster
 top.markers= agingnuclei.markers %>%
-                group_by(cluster) %>%
-                top_n(n = 1, wt = avg_log2FC)
+  group_by(cluster) %>%
+  top_n(n = 1, wt = avg_log2FC)
 
 ###test
 FeaturePlot(agingnuclei.combined.sct, features = top.markers %>% pull(gene) %>% .[1:6] , min.cutoff = "q9")
@@ -170,7 +174,7 @@ dev.off()
 
 # STILL UNDER DEVELOPMENT, about using SCTransform to scale.data for all genes, then use it for UMAP plot...Maybe I will not need it! -------
 
- 
+
 agingnuclei.combined.sct.marker.genes = SCTransform(agingnuclei.combined.sct, method = "glmGamPoi",assay = "RNA",new.assay.name = "SCTallGenes",return.only.var.genes = F, verbose = T, vars.to.regress = "percent.mt")
 
 #set to new assay
