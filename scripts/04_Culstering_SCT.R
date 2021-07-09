@@ -256,34 +256,49 @@ DimPlot(seurat_integrated_12PC,
 
 ggsave("plots/12PC_resolutions_0.4_like Oliver_hahn.pdf", height = 5, width = 7)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Finally, assign identity of clusters to 0.**
-Idents(object = seurat_integrated) <- "integrated_snn_res.0.**"
-
+##Trying 0.3
+# Assign identity of clusters
+Idents(object = seurat_integrated_12PC) <- "integrated_snn_res.0.3"
 # Plot the UMAP
-DimPlot(seurat_integrated,
+DimPlot(seurat_integrated_12PC,
         reduction = "umap",
         label = TRUE,
         label.size = 6)
 
-saveRDS(seurat_integrated, file = "Rdata/integrated_seurat_pca40_res_**.rds")
+ggsave("plots/12PC_resolutions_0.3_like Oliver_hahn.pdf", height = 5, width = 7)
+
+##Trying 0.2
+# Assign identity of clusters
+Idents(object = seurat_integrated_12PC) <- "integrated_snn_res.0.2"
+# Plot the UMAP
+DimPlot(seurat_integrated_12PC,
+        reduction = "umap",
+        label = TRUE,
+        label.size = 6)
+
+ggsave("plots/12PC_resolutions_0.2_like Oliver_hahn.pdf", height = 5, width = 7)
+
+
+##With this, I got 22 clusters, same as Oliver Hahn...So, I will keep this values.
+###12 PC for cell embeding, 0.3 for cluster identification...
+
+#making clustree
+clustree(seurat_integrated_12PC, prefix = "integrated_snn_res.")
+ggsave("plots/12PC_resolutions_clustree_10res.pdf", height = 10, width = 20)
+##but honestly, it is really not easy to use to fix which res to use...saving as a reference...
+
+
+
+
+
+# Finally, assign identity of clusters to 0.3, for 12 PC cell embedding, NOT 40 PC embedding!!
+Idents(object = seurat_integrated_12PC) <- "integrated_snn_res.0.4"
+
+# Plot the UMAP
+DimPlot(seurat_integrated_12PC,
+        reduction = "umap",
+        label = TRUE,
+        label.size = 6)
+ggsave("plots/12PC_resolutions_0.3_like Oliver_hahn_FINAL.pdf", height = 8, width = 12)
+
+saveRDS(seurat_integrated_12PC, file = "Rdata/seurat_integrated_12PC_res_0.3_Hahn.rds")
