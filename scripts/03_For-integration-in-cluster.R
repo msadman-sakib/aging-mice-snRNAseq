@@ -54,7 +54,7 @@ print("RunPCA Finished!")
 
 # Plot PCA
 PCAPlot(seurat_integrated,
-        split.by = "sample")  
+        group.by = "sample")  
 ggsave("Integrated-PCA.pdf", height = 7, width = 14)
 print("PCA plot saved!")
 
@@ -65,12 +65,13 @@ seurat_integrated <- RunUMAP(seurat_integrated,
 print("RunUMAP  Finished!")
 
 # Plot UMAP                             
-DimPlot(seurat_integrated)     
+DimPlot(seurat_integrated, group.by = "sample",)     
 ggsave("Integrated-UMAP.pdf", height = 7, width = 7)
 print("UMAP plot saved!")
 
 # Plot UMAP split by sample
 DimPlot(seurat_integrated,
+        group.by = "sample",
         split.by = "sample")
 ggsave("Integrated-UMAP-sidebyside.pdf", height = 7, width = 14) ###here just for a dot, I have to rerun the whole thing shit!!!
 print("Integrated side by side UMAP plot saved!")

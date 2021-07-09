@@ -26,6 +26,7 @@ library(tidyverse)
 library(RCurl)
 library(cowplot)
 library(ggthemes)
+library(clustree)
 
 seurat_integrated <- readRDS("Rdata/integrated_seurat_2.5hrs.rds")
 
@@ -61,6 +62,12 @@ ElbowPlot(object = seurat_integrated,
 #We will use the FindClusters() function to perform the graph-based clustering. The resolution is an important argument that sets the "granularity" of the downstream clustering and will need to be optimized for every individual experiment. For datasets of 3,000 - 5,000 cells, the resolution set between 0.4-1.4 generally yields good clustering. Increased resolution values lead to a greater number of clusters, which is often required for larger datasets.
 
 #The FindClusters() function allows us to enter a series of resolutions and will calculate the "granularity" of the clustering. This is very helpful for testing which resolution works for moving forward without having to run the function for each resolution.
+
+
+
+#So, from previous script, 03_01_checking_cell_clusters_to_remove_sparse_clusters.R, I will use 40 pca for UMAP projection, as there is no difference between 40 and 50, and even reducing to 20 or 30, the small clusters stays, meaning, they are real!!
+
+
 
 # Determine the K-nearest neighbor graph
 seurat_integrated <- FindNeighbors(object = seurat_integrated, 
@@ -127,3 +134,156 @@ DimPlot(seurat_integrated,
 
 ggsave("plots/resolutions_0.2_27_clusters.pdf", height = 5, width = 7)
 
+
+##But feeling, 0.1 might be better
+# Assign identity of clusters
+Idents(object = seurat_integrated) <- "integrated_snn_res.0.1"
+# Plot the UMAP
+DimPlot(seurat_integrated,
+        reduction = "umap",
+        label = TRUE,
+        label.size = 3)
+
+ggsave("plots/resolutions_0.1_18_clusters.pdf", height = 5, width = 7)
+
+
+
+##But this method is not exhaustive. I found clustree package to deal with this elegantly.
+
+library(clustree)
+##check the prefix of the different resolutions
+
+seurat_integrated <- FindClusters(object = seurat_integrated,
+                                  resolution = tested.resolutions)
+
+
+head(seurat_integrated[[]])
+
+#making clustree
+clustree(seurat_integrated, prefix = "integrated_snn_res.")
+ggsave("plots/resolutions_clustree_23res.pdf", height = 10, width = 20)
+##But the plot looks super hazy. Need to simplify. I need to use less resolutions.
+
+#setting res from 0.1-1.0, as they have less than 50 clusters. 
+seurat_integrated.clustree <- seurat_integrated ##making a copy
+
+##removing those extra res to exclude from clustree
+
+seurat_integrated.clustree@meta.data$integrated_snn_res.1.4 = NULL
+seurat_integrated.clustree@meta.data$integrated_snn_res.1.6 = NULL
+seurat_integrated.clustree@meta.data$integrated_snn_res.1.8 = NULL
+seurat_integrated.clustree@meta.data$integrated_snn_res.2 = NULL
+seurat_integrated.clustree@meta.data$integrated_snn_res.4 = NULL
+seurat_integrated.clustree@meta.data$integrated_snn_res.6 = NULL
+seurat_integrated.clustree@meta.data$integrated_snn_res.8 = NULL
+seurat_integrated.clustree@meta.data$integrated_snn_res.10 = NULL
+seurat_integrated.clustree@meta.data$integrated_snn_res.12 = NULL
+seurat_integrated.clustree@meta.data$integrated_snn_res.14 = NULL
+seurat_integrated.clustree@meta.data$integrated_snn_res.16 = NULL
+seurat_integrated.clustree@meta.data$integrated_snn_res.18 = NULL
+seurat_integrated.clustree@meta.data$integrated_snn_res.20 = NULL
+
+clustree(seurat_integrated.clustree, prefix = "integrated_snn_res.")
+ggsave("plots/resolutions_clustree_10res.pdf", height = 10, width = 20)
+
+##now removing other res to make clustree plot from 0.1-0.6.
+seurat_integrated.clustree@meta.data$integrated_snn_res.0.8 = NULL
+seurat_integrated.clustree@meta.data$integrated_snn_res.0.9 = NULL
+seurat_integrated.clustree@meta.data$integrated_snn_res.1 = NULL
+clustree(seurat_integrated.clustree, prefix = "integrated_snn_res.")
+ggsave("plots/resolutions_clustree_10res.pdf", height = 10, width = 20)
+
+
+######################################################
+######################################################
+#But still, cannot decide. Now I checked Oliver Hahn paper, they used FindNeighbors fimd 1:12. In my elbow plot, at 15th PC, the Standard Dev is the lowest, then the change is not that much. This is similar to 12 PC used in oliver hahn paper. So, now generating using 15 PCs.
+
+##In the mean time, I tried for 15PC- see elbow plot...But the result is still not convincing. I think I will follow Oliver hahn values, 12 PC, 0.4 Res...
+
+# Determine the K-nearest neighbor graph
+seurat_integrated_12PC <- FindNeighbors(object = seurat_integrated, 
+                                   dims = 1:12)
+
+tested.resolutions_12PC <- c(0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)
+
+# Determine the clusters for various resolutions. Need produce plots for all of them.
+seurat_integrated_12PC <- FindClusters(object = seurat_integrated_12PC,
+                                  resolution = tested.resolutions_12PC)
+
+
+seurat_integrated_12PC@meta.data$integrated_snn_res.1.4 = NULL
+seurat_integrated_12PC@meta.data$integrated_snn_res.1.6 = NULL
+seurat_integrated_12PC@meta.data$integrated_snn_res.1.8 = NULL
+seurat_integrated_12PC@meta.data$integrated_snn_res.2 = NULL
+seurat_integrated_12PC@meta.data$integrated_snn_res.4 = NULL
+seurat_integrated_12PC@meta.data$integrated_snn_res.6 = NULL
+seurat_integrated_12PC@meta.data$integrated_snn_res.8 = NULL
+seurat_integrated_12PC@meta.data$integrated_snn_res.10 = NULL
+seurat_integrated_12PC@meta.data$integrated_snn_res.12 = NULL
+seurat_integrated_12PC@meta.data$integrated_snn_res.14 = NULL
+seurat_integrated_12PC@meta.data$integrated_snn_res.16 = NULL
+seurat_integrated_12PC@meta.data$integrated_snn_res.18 = NULL
+seurat_integrated_12PC@meta.data$integrated_snn_res.20 = NULL
+
+##So, I have 10 resolutions. How to plot them all together in a grid? I will just make a bar plot to see how many clusters each of those resolutions find. 
+#Also, in the meta data, theres a column called seurat cluster. It finds 31 clusters. What is the meaning of it? 
+resolutions_clusters_12PC =  select(seurat_integrated_12PC@meta.data, contains("integrated_snn_res")) 
+resolutions_clusters_12PC[] = lapply(resolutions_clusters_12PC, as.numeric)
+resolutions_clusters_12PC.summary=data.frame(apply(resolutions_clusters_12PC,2,max))
+colnames(resolutions_clusters_12PC.summary) = "total_clusters"
+resolutions_clusters_12PC.summary$resolution = rownames(resolutions_clusters_12PC.summary)
+resolutions_clusters_12PC.summary$resolution = gsub("integrated_snn_res.","",as.character(resolutions_clusters_12PC.summary$resolution))
+resolutions_clusters_12PC.summary = resolutions_clusters_12PC.summary %>% arrange(as.numeric(resolution))
+resolutions_clusters_12PC.summary$resolution <- factor(resolutions_clusters_12PC.summary$resolution, levels = resolutions_clusters_12PC.summary$resolution)
+
+#Line plot
+ggplot(data = resolutions_clusters_12PC.summary, aes(x = resolution, y=total_clusters, group = 1)) + 
+  geom_line(size =1,linetype = "dashed" ) + 
+  geom_point(size=2) + scale_y_continuous(name="No. of clusters", breaks = seq(0, 220, by = 10)) + 
+  theme(axis.text = element_text(size = 16),axis.title = element_text(size = 25) ) #+
+#theme_linedraw()
+ggsave("plots/resolutions_12PC_no_of_clusters.pdf", height = 8, width = 12)
+
+
+
+# Assign identity of clusters
+Idents(object = seurat_integrated_12PC) <- "integrated_snn_res.0.4"
+# Plot the UMAP
+DimPlot(seurat_integrated_12PC,
+        reduction = "umap",
+        label = TRUE,
+        label.size = 6)
+
+ggsave("plots/12PC_resolutions_0.4_like Oliver_hahn.pdf", height = 5, width = 7)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Finally, assign identity of clusters to 0.**
+Idents(object = seurat_integrated) <- "integrated_snn_res.0.**"
+
+# Plot the UMAP
+DimPlot(seurat_integrated,
+        reduction = "umap",
+        label = TRUE,
+        label.size = 6)
+
+saveRDS(seurat_integrated, file = "Rdata/integrated_seurat_pca40_res_**.rds")
