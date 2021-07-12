@@ -71,12 +71,12 @@ metadata <- metadata %>%
 
 
 # Add metadata back to Seurat object
+metadata = metadata %>%  rename(condition_replicate = conditon_replicate)
 agingnuclei@meta.data <- metadata
 
 # Create .RData object to load at any time
 save(agingnuclei, file="Rdata/merged_filtered_seurat_agingMice.RData")
-
-
+saveRDS(metadata, "Rdata/metadata_for_QCplots.rds")
 
 # 2. Assessing quality matrix ----------------
 
@@ -95,6 +95,9 @@ save(agingnuclei, file="Rdata/merged_filtered_seurat_agingMice.RData")
 
 
 #1.Visualize the number of cell counts per condition
+
+metadata = readRDS("Rdata/metadata_for_QCplots.rds")
+
 metadata %>% 
   ggplot(aes(x=sample, fill=sample)) + 
   geom_bar() +
@@ -122,10 +125,10 @@ ggsave("plots/QC_cellNumber_perSample.pdf",height = 5, width = 7)
 # If UMI counts are between 500-1000 counts, it is usable but the cells probably should have been sequenced more deeply.
 metadata %>% 
   ggplot(aes(color=sample, x=nUMI, fill= sample)) + 
-  geom_density(alpha = 0.2) + 
+  geom_density(alpha = 0.2, aes(y = ..count..)) + 
   scale_x_log10() + 
   theme_classic() +
-  ylab("Cell density") +
+  ylab("Cell counts") +
   geom_vline(xintercept = 500)
 ggsave("plots/QC_transcriptPerCellperCondition.pdf",height = 5, width = 7)
 
@@ -133,10 +136,10 @@ ggsave("plots/QC_transcriptPerCellperCondition.pdf",height = 5, width = 7)
 
 metadata %>% 
   ggplot(aes(group=condition_replicate, x=nUMI, fill= sample)) + 
-  geom_density(alpha = 0.2) + 
+  geom_density(alpha = 0.2, aes(y = ..count..)) + 
   scale_x_log10() + 
   theme_classic() +
-  ylab("Cell density") +
+  ylab("Cell counts") +
   geom_vline(xintercept = 500)
 ggsave("plots/QC_transcriptPerCellpersample.pdf",height = 5, width = 7)
 
@@ -144,7 +147,7 @@ ggsave("plots/QC_transcriptPerCellpersample.pdf",height = 5, width = 7)
 # Visualize the distribution of genes detected per cell via histogram
 metadata %>% 
   ggplot(aes(color=sample, x=nGene, fill= sample)) + 
-  geom_density(alpha = 0.2) + 
+  geom_density(alpha = 0.2, aes(y = ..count..)) + 
   theme_classic() +
   scale_x_log10() + 
   geom_vline(xintercept = 300)
@@ -154,7 +157,7 @@ ggsave("plots/QC_genes detected per cell.pdf",height = 5, width = 7)
 #6. Visualize the distribution of genes detected per cell via histogram
 metadata %>% 
   ggplot(aes(group=condition_replicate, x=nGene, fill= sample)) + 
-  geom_density(alpha = 0.2) + 
+  geom_density(alpha = 0.2, aes(y = ..count..)) + 
   theme_classic() +
   scale_x_log10() + 
   geom_vline(xintercept = 300)
