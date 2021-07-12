@@ -113,9 +113,12 @@ options(future.globals.maxSize = 8000 * 1024^2) ##setting 8GB.
 
 #NOTE: By default, after normalizing, adjusting the variance, and regressing out uninteresting sources of variation, SCTransform will rank the genes by residual variance and output the 3000 most variant genes. If the dataset has larger cell numbers, then it may be beneficial to adjust this parameter higher using the variable.features.n argument.
 
+!!!!!!!!!!!!!!!###########NOTE!!!
+
+
 #The following like of code took around 15 mins
 for (i in 1:length(split_seurat)) {
-  split_seurat[[i]] <- SCTransform(split_seurat[[i]], vars.to.regress = c("mitoRatio"))
+  split_seurat[[i]] <- SCTransform(split_seurat[[i]], vars.to.regress = c("mitoRatio")) ####NOTE: Should also include ‘nCount_RNA’, ‘nFeature_RNA’ !!!!!!
 }
 ##Note: This can be done using lapply and function too. See Seurat Vignette. 
 ##I had warnings, more than 50. All had this same line
