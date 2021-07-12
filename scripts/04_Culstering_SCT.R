@@ -194,7 +194,7 @@ clustree(seurat_integrated.clustree, prefix = "integrated_snn_res.")
 ggsave("plots/resolutions_clustree_10res.pdf", height = 10, width = 20)
 
 
-######################################################
+################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################
 ######################################################
 #But still, cannot decide. Now I checked Oliver Hahn paper, they used FindNeighbors fimd 1:12. In my elbow plot, at 15th PC, the Standard Dev is the lowest, then the change is not that much. This is similar to 12 PC used in oliver hahn paper. So, now generating using 15 PCs.
 
@@ -288,11 +288,8 @@ ggsave("plots/12PC_resolutions_clustree_10res.pdf", height = 10, width = 20)
 ##but honestly, it is really not easy to use to fix which res to use...saving as a reference...
 
 
-
-
-
 # Finally, assign identity of clusters to 0.3, for 12 PC cell embedding, NOT 40 PC embedding!!
-Idents(object = seurat_integrated_12PC) <- "integrated_snn_res.0.4"
+Idents(object = seurat_integrated_12PC) <- "integrated_snn_res.0.3"
 
 # Plot the UMAP
 DimPlot(seurat_integrated_12PC,
@@ -302,3 +299,7 @@ DimPlot(seurat_integrated_12PC,
 ggsave("plots/12PC_resolutions_0.3_like Oliver_hahn_FINAL.pdf", height = 8, width = 12)
 
 saveRDS(seurat_integrated_12PC, file = "Rdata/seurat_integrated_12PC_res_0.3_Hahn.rds")
+
+##IMPORTANT Note: 10July, 01:04 AM
+#I tried today to selct the PCs for embedding and resolutions for cluster number selection. I finally fixated using the oliver Hahn parameters from CoolMPS paper. But now, I realised, I should be following the tutorial for this. THey have a QC step for this. Damn! Still, I learned a lot today! Selecting PC and resolution is very crucial for downstream analysis, therefore, it is good that I tried all these combinations. In the next script, I will do the clustering QC. If that works, than Alhamdulillah! If not, then I will come back here, change PCs and resolution probably. 
+#But also realized, this embedding(FindNeighbors(), ndims=, PC selection) and resolution(FindClusters(), resolution= ) has to be just precise, cause there is no right or wrong. Once I check via the marker genes, it can be that neurons are dispersed across cluster 1,2,3, so those 3 clusters can be named as neurons, for example. 
