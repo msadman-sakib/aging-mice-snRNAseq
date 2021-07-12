@@ -3,6 +3,8 @@ library(Seurat)
 library(tidyverse)
 library(metap)
 library(rio)
+library(enrichR)
+#load data
 #seurat_integrated_12PC = readRDS("Rdata/seurat_integrated_12PC_res_0.3_Hahn.rds")
 
 n_cells <- FetchData(seurat_integrated_12PC, 
@@ -201,7 +203,7 @@ top20 <- conserved_markers %>%
 
 export(top20, "results/top20ConservedMarkers.xlsx")
 
-#Extract top 20 markers per cluster
+#Extract top 30 markers per cluster
 top30 <- conserved_markers %>% 
   mutate(avg_fc = (young_avg_log2FC + old_avg_log2FC) /2) %>%
   group_by(cluster_id) %>%
@@ -210,15 +212,12 @@ top30 <- conserved_markers %>%
 
 export(top30, "results/top30ConservedMarkers.xlsx")
 
+###Use Toppfun/Toppcell atlas to see!!
+
+##Or use EnrichR!
+
+#I am using EnrichR and using Allen scRNAseq atlas data in a different script, script 06.
 
 
 
-
-
-##Need to manually check what genes corresponds to what celltypes...It needs lot of prior knowledge on marker genes..
-!!!!!!!!!!()###Last would be using AddModule score and check gene list expression...
-
-
-
-
-##Now, if this doesn't work then one needs to use FindMarker
+##Now, if this doesn't work(say, some cluster not giving any genes) then one needs to use FindMarker. But I have already atleast 30 significant genes in each clusters.
