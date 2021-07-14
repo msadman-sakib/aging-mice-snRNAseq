@@ -66,7 +66,7 @@ ElbowPlot(object = seurat_integrated,
 
 
 #So, from previous script, 03_01_checking_cell_clusters_to_remove_sparse_clusters.R, I will use 40 pca for UMAP projection, as there is no difference between 40 and 50, and even reducing to 20 or 30, the small clusters stays, meaning, they are real!!
-
+##NOTE!!!: 14 July 2021: that seems Too much 
 
 
 # Determine the K-nearest neighbor graph
@@ -203,9 +203,7 @@ ggsave("plots/resolutions_clustree_10res.pdf", height = 10, width = 20)
 # Determine the K-nearest neighbor graph
 seurat_integrated_12PC <- FindNeighbors(object = seurat_integrated, 
                                    dims = 1:12)
-
 tested.resolutions_12PC <- c(0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)
-
 # Determine the clusters for various resolutions. Need produce plots for all of them.
 seurat_integrated_12PC <- FindClusters(object = seurat_integrated_12PC,
                                   resolution = tested.resolutions_12PC)
@@ -225,7 +223,7 @@ seurat_integrated_12PC@meta.data$integrated_snn_res.16 = NULL
 seurat_integrated_12PC@meta.data$integrated_snn_res.18 = NULL
 seurat_integrated_12PC@meta.data$integrated_snn_res.20 = NULL
 
-##So, I have 10 resolutions. How to plot them all together in a grid? I will just make a bar plot to see how many clusters each of those resolutions find. 
+##So, I have 10 resolutions. How to plot them all together in a grid? I will just make a line plot to see how many clusters each of those resolutions find. 
 #Also, in the meta data, theres a column called seurat cluster. It finds 31 clusters. What is the meaning of it? 
 resolutions_clusters_12PC =  select(seurat_integrated_12PC@meta.data, contains("integrated_snn_res")) 
 resolutions_clusters_12PC[] = lapply(resolutions_clusters_12PC, as.numeric)
