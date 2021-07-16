@@ -95,6 +95,9 @@ PCs.cluster.numbers.df = PCs.cluster.numbers %>% reduce(left_join, by = "resolut
 ggplot(PCs.cluster.numbers.df) + geom_line(aes(x = resolution, y = Number_of_clusters,group = PC_numbers, colour = PC_numbers)) + scale_y_continuous(breaks = seq(0, 48, by = 2))
 ggsave("plots/resolutions-combined-4diff.PCS.pdf", height = 5, width = 6)
 
+saveRDS(PCs.cluster.numbers.df, "Rdata/PCs.cluster.numbers.df.lineplot.rds")
+
+
 ######################For loop for saving multiple plots in a list##############
 
 ##Okay now, I am gonna use res = 0.3 for PCs, as it will give around/ less than 30 clusters. 
@@ -107,7 +110,7 @@ PCs.plots = list()
 ##FOR LOOP TO SAVE MULTIPLE UMAP PLOTS IN A LIST!!!
 for(i in PCs ){
 
-  seurat_integrated <- FindNeighbors(object = seurat_integrated, 
+seurat_integrated <- FindNeighbors(object = seurat_integrated, 
                                    dims = 1:i)
 # Determine the clusters for various resolutions. Need produce plots for all of them.
 seurat_integrated <- FindClusters(object = seurat_integrated,
@@ -122,16 +125,26 @@ print(paste0("PC_",i," plot saved!"))
 #now, plotting all those saved in that list in a single grid
 g = grid.arrange(grobs =  PCs.plots, ncol = 2)
 ggsave(plot = g, "plots/PC_embedding-test-res0.3/all4PCs_new40PC.pdf", height = 12, width = 15)
+#save(PCs.plots,g, file = "Rdata/Embedding-test-res0.3_all4PCs.Rdata") this didnt work.
+
 
 ##Okay now the embedding works, after including the RunUMAP function.
 
+
 ## all4PCs_new40PC.pdf this plot has 4 UMAPS for 4 PCs(12,15,30,40 using 0.3 resolution for clusters. Seems like PC40 is good. But need to decide now...)
+#freshly loading object
+seurat_integrated <- readRDS("Rdata/integrated_seurat_2.5hrs.rds")
+seurat_integrated <- FindNeighbors(object = seurat_integrated, 
+                                   dims = 1:40)
+# Determine the clusters for various resolutions. Need produce plots for all of them.
+seurat_integrated <- FindClusters(object = seurat_integrated,
+                                  resolution = 0.3) ##this is fixed to get less than 30 clusters in each PCs.
+seurat_integrated <- RunUMAP(seurat_integrated, dims = 1:40) ####I MISSED THIS STEP! without this, the FindNeughbours dims won't show effect!!!
 
-
-
+saveRDS(seurat_integrated, "Rdata/seurat_integrated_PC40_res0.3.rds")
 
 ###NOTE for troubleshooting: 
-
+# NOTE -------
 #Upps! The embedding did not change! The cells were the same in all three plots. Lets try manually first, then come back here..
 #seurat_integrated <- readRDS("Rdata/integrated_seurat_2.5hrs.rds")
 # seurat_integrated <- FindNeighbors(object = seurat_integrated, 

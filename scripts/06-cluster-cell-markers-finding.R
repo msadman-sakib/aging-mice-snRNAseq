@@ -7,7 +7,7 @@ library(tidyverse)
 library(rio)
 library(enrichR)
 #load dataset
-conserved_markers = readRDS("Rdata/seurat_integrated_12PC_FindConservedMarkers.rds")
+conserved_markers = readRDS("Rdata/seurat_integrated_FindConservedMarkers.rds")
 
 # Testing cluste cell type idenfication manually using enrichr. -------
 
@@ -25,7 +25,7 @@ top30 <- conserved_markers %>%
   top_n(n = 30,
         wt = avg_fc)
 # need to loop. Or one can do lapply too. But need to check the syntax.
-for (i in 0:21){
+for (i in 0:(max(conserved_markers$cluster_id))){
   enriched_top30 <- enrichr(top30 %>% select(cluster_id, gene) %>% filter( cluster_id== i) %>%  pull(gene), dbs_Allen_Brain_Atlas_10x_scRNA_2021)
   
   plotEnrich(enriched_top30$`Allen_Brain_Atlas_10x_scRNA_2021`, showTerms = 10, numChar = 50, y = "Count", orderBy = "Adjusted.P.value")
@@ -45,7 +45,7 @@ top20 <- conserved_markers %>%
   top_n(n = 20,
         wt = avg_fc)
 # need to loop. Or one can do lapply too. But need to check the syntax.
-for (i in 0:21){
+for (i in 0:(max(conserved_markers$cluster_id))){
   enriched_top20 <- enrichr(top20 %>% select(cluster_id, gene) %>% filter( cluster_id== i) %>%  pull(gene), dbs_Allen_Brain_Atlas_10x_scRNA_2021)
   
   plotEnrich(enriched_top20$`Allen_Brain_Atlas_10x_scRNA_2021`, showTerms = 10, numChar = 50, y = "Count", orderBy = "Adjusted.P.value")

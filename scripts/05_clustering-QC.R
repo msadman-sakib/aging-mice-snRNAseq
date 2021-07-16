@@ -1,14 +1,16 @@
 ## Extract identity and sample information from seurat object to determine the number of cells per cluster per sample
 library(Seurat)
+library(cowplot)
 library(tidyverse)
 library(metap)
 library(rio)
 library(enrichR)
-#load data
-#seurat_integrated_12PC = readRDS("Rdata/seurat_integrated_12PC_res_0.3_Hahn.rds")
+#load data #previously was using seurat_integrated_12PC_res_0.3_Hahn.rds, but now I decided to use seurat_integrated_PC40_res0.3.rds after checking the line plot and UMAP embedding. 
 
-n_cells <- FetchData(seurat_integrated_12PC, 
-                     vars = c("ident", "sample", )) %>%
+seurat_integrated = readRDS("Rdata/seurat_integrated_PC40_res0.3.rds")
+
+n_cells <- FetchData(seurat_integrated, 
+                     vars = c("ident", "sample" )) %>%
   dplyr::count(ident, sample) %>%
   tidyr::spread(ident, n)
 
@@ -27,22 +29,21 @@ ggsave("plots/cluster_proportions-Normed-young-old.pdf", width = 10, height = 7)
 
 
 # UMAP of cells in each cluster by sample
-DimPlot(seurat_integrated_12PC, 
+DimPlot(seurat_integrated, 
         label = TRUE, 
         split.by = "sample")  + NoLegend()
 ggsave("plots/cluster_proportions-young-old-UMAP.pdf", width = 14, height = 7)
 
 # Explore whether clusters segregate by cell cycle phase
-DimPlot(seurat_integrated_12PC,
+DimPlot(seurat_integrated,
         label = TRUE, 
         split.by = "Phase")  + NoLegend()
 
-,.,)()!!!!!!####TO DO: MAKE A PROPORTION PLOT FOR THESE PHASES IN YOUNG AND OLD!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 # Determine metrics to plot present in seurat_integrated@meta.data
 metrics <-  c("nUMI", "nGene", "S.Score", "G2M.Score", "mitoRatio")
 
-FeaturePlot(seurat_integrated_12PC, 
+FeaturePlot(seurat_integrated, 
             reduction = "umap", 
             features = metrics,
             pt.size = 0.4, 
@@ -60,12 +61,12 @@ columns <- c(paste0("PC_", 1:16),
              "UMAP_1", "UMAP_2")
 
 # Extracting this data from the seurat object
-pc_data <- FetchData(seurat_integrated_12PC, 
+pc_data <- FetchData(seurat_integrated, 
                      vars = columns)
 
 
 # Adding cluster label to center of cluster on UMAP
-umap_label <- FetchData(seurat_integrated_12PC, 
+umap_label <- FetchData(seurat_integrated, 
                         vars = c("ident", "UMAP_1", "UMAP_2"))  %>%
   group_by(ident) %>%
   summarise(x=mean(UMAP_1), y=mean(UMAP_2))
@@ -88,7 +89,7 @@ ggsave("plots/cluster_QC_16PCs.pdf", height = 15, width = 15) ##VERY IMPORTANT P
 #(disregard the cluster numbers here)We can see how the clusters are represented by the different PCs. For instance, the genes driving PC_2 exhibit higher expression in clusters 6, 11, and 17 (maybe a bit higher in 15, too). We could look back at our genes driving this PC to get an idea of what the cell types might be:
 
 # Examine PCA results 
-print(seurat_integrated_12PC[["pca"]], dims = 1:5, nfeatures = 5)
+print(seurat_integrated[["pca"]], dims = 1:5, nfeatures = 5)
 #####Real answer!! PC_1 positive genes here are Plp1, Pde4b, Mbp, St18, Prr5l . Mbp is oligodendrocyte gene marker. So, cluster 2 should be oligodendrocyte!!! yay! First cluster identified!!
 
 ##########To truly determine the identity of the clusters and whether the resolution is appropriate, it is helpful to explore a handful of known gene markers for the cell types expected.
@@ -98,10 +99,10 @@ print(seurat_integrated_12PC[["pca"]], dims = 1:5, nfeatures = 5)
 #NOTE: The SCTransform normalization was performed only on the 3000 most variable genes, so many of our genes of interest may not be present in this data.
 
 # Select the RNA counts slot to be the default assay
-DefaultAssay(seurat_integrated_12PC) <- "RNA"
+DefaultAssay(seurat_integrated) <- "RNA"
 
 # Normalize RNA data for visualization purposes
-seurat_integrated_12PC <- NormalizeData(seurat_integrated_12PC, verbose = FALSE)
+seurat_integrated <- NormalizeData(seurat_integrated, verbose = FALSE)
 
 ##from CoolMPS paper (Mature Oligodendrocytes = Plp1, Mog, Pde4b, St18, Slc24a2, Pcdh9; choroid plexus cells = Ttr, Htr2c; Astrocytes = Apoe, Slc1a2, Slc1a3, Prex2, Cst3, Gabrb1, Gpc5; Neurons = Lsamp, Kcnip4, Tenm2, Nrg3, Celf2, Grin2a).
 
@@ -109,33 +110,40 @@ seurat_integrated_12PC <- NormalizeData(seurat_integrated_12PC, verbose = FALSE)
 
 #For the markers used here, we are looking for positive markers and consistency of expression of the markers across the clusters. For example, if there are two markers for a cell type and only one of them is expressed in a cluster - then we cannot reliably assign that cluster to the cell type.
 
+##From naim vai: 16 July 2021 Marker genes.....Try it..
+#Neuron: Syt1, Rbfox3, Scl17a7, Gad2
+#Astrocytes: Gja1, Ndrg2
+#Oligodendrocyte: Mal, Cldn11,Mbp
+#Microglia: Dock8, Ikzf1, Hexb, Inpp5d
+
+
 #Mature Oligo markers
-FeaturePlot(seurat_integrated_12PC, 
+FeaturePlot(seurat_integrated, 
             reduction = "umap", 
             features = c("Plp1", "Mog", "Pde4b", "St18", "Slc24a2", "Pcdh9"), 
             order = TRUE,
             min.cutoff = 'q10', 
             label = TRUE)
-ggsave("plots/cluster_QC-hahn-mature-olig.pdf", width = 12, height = 12)
+ggsave("plots/cluster_QC-40PC-mature-olig.pdf", width = 12, height = 12)
 
 
 #Astro markers
-FeaturePlot(seurat_integrated_12PC, 
+FeaturePlot(seurat_integrated, 
             reduction = "umap", 
             features = c("Apoe", "Slc1a2", "Slc1a3", "Prex2", "Cst3", "Gabrb1", "Gpc5"), 
             order = TRUE,
             min.cutoff = 'q10', 
             label = TRUE)
-ggsave("plots/cluster_QC-hahn-Astro.pdf", width = 12, height = 12)
+ggsave("plots/cluster_QC-40PC-Astro.pdf", width = 12, height = 12)
 
 #Microglia markers
-FeaturePlot(seurat_integrated_12PC, 
+FeaturePlot(seurat_integrated, 
             reduction = "umap", 
             features = c("Tmem119", "Itgam", "Ptprc","Aif1","Cx3cr1","Cd68","Cd40"), #Itgam Cd11b was not found
             order = TRUE,
             min.cutoff = 'q10', 
             label = TRUE)
-ggsave("plots/cluster_QC-microglia.pdf", width = 12, height = 12)
+ggsave("plots/cluster_QC-40PC-microglia.pdf", width = 12, height = 12)
 
 ####NOTE: If any cluster appears to contain two separate cell types, it's helpful to increase our clustering resolution to properly subset the clusters. Alternatively, if we still can't separate out the clusters using increased resolution, then it's possible that we had used too few principal components such that we are just not separating out these cell types of interest. To inform our choice of PCs, we could look at our PC gene expression overlapping the UMAP plots and determine whether our cell populations are separating by the PCs included.
 

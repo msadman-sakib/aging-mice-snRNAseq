@@ -5,7 +5,7 @@ library(future)
 
 #loading data
 annotations = readRDS("Rdata/mouse-gene-annotation.rds")
-seurat_integrated_12PC = readRDS("Rdata/seurat_integrated_12PC_res_0.3_Hahn.rds")
+seurat_integrated = readRDS("Rdata/seurat_integrated_PC40_res0.3.rds")
 
 # change the current plan to access parallelization
 plan("multiprocess", workers = 40)
@@ -17,7 +17,7 @@ plan()
 
 # Create function to get conserved markers for any given cluster
 get_conserved <- function(cluster){
-  FindConservedMarkers(seurat_integrated_12PC,
+  FindConservedMarkers(seurat_integrated,
                        ident.1 = cluster,
                        grouping.var = "sample",
                        only.pos = TRUE) %>%
@@ -28,15 +28,5 @@ get_conserved <- function(cluster){
 }
 
 # Iterate function across desired clusters
-conserved_markers <- map_dfr(c(0:21), get_conserved)
-
-
-# Extract top 10 markers per cluster
-top10 <- conserved_markers %>% 
-  mutate(avg_fc = (young_avg_log2FC + old_avg_log2FC) /2) %>% 
-  group_by(cluster_id) %>% 
-  top_n(n = 10, 
-        wt = avg_fc)
-
-saveRDS(conserved_markers, "Rdata/seurat_integrated_12PC_FindConservedMarkers.rds")
-saveRDS(top10, "Rdata/seurat_integrated_12PC_top10ConservedMarkers.rds")
+conserved_markers <- map_dfr(c(0:(max(as.numeric(seurat_integrated@meta.data$integrated_snn_res.0.3))-1)), get_conserved)
+saveRDS(conserved_markers, "Rdata/seurat_integrated_FindConservedMarkers.rds")
