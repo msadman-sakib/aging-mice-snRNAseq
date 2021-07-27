@@ -54,6 +54,26 @@ for (i in 0:(max(conserved_markers$cluster_id))){
   print(paste0("cluster",i," done"))
 }
 
+# In Allen paper, they used Top 50. So, trying for Top50
+# Now trying with Top 50 genes.
+# Extract top 50 markers per cluster
+top50 <- conserved_markers %>% 
+  mutate(avg_fc = (young_avg_log2FC + old_avg_log2FC) /2) %>%
+  group_by(cluster_id) %>%
+  top_n(n = 50,
+        wt = avg_fc)
+
+enriched_top50 = list() ##saving outputs of the for loop in a list. To do some wrangling
+# need to loop. Or one can do lapply too. But need to check the syntax.
+for (i in 0:(max(conserved_markers$cluster_id))){
+  enriched_top50[[paste0("cluster_",i)]] <- enrichr(top50 %>% select(cluster_id, gene) %>% filter( cluster_id== i) %>%  pull(gene), dbs_Allen_Brain_Atlas_10x_scRNA_2021)
+  plotEnrich(enriched_top50[[paste0("cluster_",i)]]$`Allen_Brain_Atlas_10x_scRNA_2021`, showTerms = 10, numChar = 50, y = "Count", orderBy = "Adjusted.P.value",title = paste0("top50 ","cluster ",i),xlab = "Allen scRNAseq 2021")
+  ggsave(paste0("plots/enrichr_markers_top50/","cluster",i,".pdf"), height = 6, width = 7)
+  print(paste0("cluster",i," done"))
+}
+
+
+
 ###NOTE: I checked the pdfs, could assign some clusters to some cell types, but this is not exhaustive. Trying another approach:
 ##Source: https://bioconductor.org/books/release/OSCA/cell-type-annotation.html#assigning-cell-labels-from-gene-sets
 # Tried but complicated...
@@ -64,15 +84,86 @@ for (i in 0:(max(conserved_markers$cluster_id))){
 ##But this will be complex coding, need to use purrr:: from tidyverse . For now, I will do it manually, side by side...
 
 ##OR! Do geneOverlap!
-###Testing
 
-library(data.table)
+#####################Testing############
 
-Allen_Brain_Atlas_10x_scRNA_2021 = read.table("data/Allen_Brain_Atlas_10x_scRNA_2021.txt", fill = T, header = F, na.strings = "NA")
+Allen_Brain_Atlas_10x_scRNA_2021 = import("data/Allen_Brain_Atlas_10x_scRNA_2021.csv", fill = T, header = F, na.strings = "NA") ##I had to take the .txt file, put it to google sheets and save as csv, then this import function works.
+rownames(Allen_Brain_Atlas_10x_scRNA_2021) = Allen_Brain_Atlas_10x_scRNA_2021$V1
+Allen_Brain_Atlas_10x_scRNA_2021 = Allen_Brain_Atlas_10x_scRNA_2021 %>% select(-V1,-V2)
 
-Allen_Brain_Atlas_10x_scRNA_2021$V0 = paste(Allen_Brain_Atlas_10x_scRNA_2021$V1,Allen_Brain_Atlas_10x_scRNA_2021$V2,Allen_Brain_Atlas_10x_scRNA_2021$V3,Allen_Brain_Atlas_10x_scRNA_2021$V4,Allen_Brain_Atlas_10x_scRNA_2021$V5,Allen_Brain_Atlas_10x_scRNA_2021$V6,sep ="_")
+#dataframe to lists
+tmp = as.data.frame(t(Allen_Brain_Atlas_10x_scRNA_2021))
+allen.genelist =  list()      
 
-Allen_Brain_Atlas_10x_scRNA_2021 = Allen_Brain_Atlas_10x_scRNA_2021[,c(983,1:982)]
-Allen_Brain_Atlas_10x_scRNA_2021 = Allen_Brain_Atlas_10x_scRNA_2021 %>% select(-V1,-V2,-V3,-V4,-V5,-V6)
+for(i in 1:ncol(tmp)) {             # Using for-loop to add columns to list
+  allen.genelist[[i]] <- tmp[ , i]
+}
+names(allen.genelist) <- colnames(tmp)
+allen.genelist = lapply(allen.genelist, function(z){ z[!is.na(z) & z != ""]})
 
-rm(tmp)
+#seperate mouse and human marker genes
+allen.genelist.mouse = names(allen.genelist) %>% 
+                            str_detect('Mouse') %>%
+                            keep(allen.genelist, .)
+
+allen.genelist.human = names(allen.genelist) %>% 
+  str_detect('Human') %>%
+  keep(allen.genelist, .)
+#####But it might take long to solve it. Trying other solutions. 
+
+######## Therefore, I will just check the pdfs for Top30 and assign then labels for the obvious ones manually..... 
+# So, I did it, I took the top significant term for each cluster from Enrichr(top30). Made an excel file. Here it is.
+# Major NOTE!!!!!:::
+# So, I took the top significant from Enrichr(using top50 genes per cluster), then used the supplemental file from the paper (https://www.sciencedirect.com/science/article/pii/S0092867421005018, it is in data/Allen_ref_clusters_10.1016-j.cell.2021.04.021.xlsx) and grabbed the cluster details. For now, I focused on the types of cells like gabaergic, glutametargic etc...But there were something weird. I saved the note in a text file in data folder. read it if needed!!
+
+#Then made the excel file that I am loading down below...
+
+clusterID.allen = import("data/manual-top50-celltype-cluster.xlsx")
+
+#load seurat integrated dataset. 
+seurat_integrated = readRDS("Rdata/seurat_integrated_PC40_res0.3.rds")
+
+# Rename all identities
+seurat_integrated <- RenameIdents(object = seurat_integrated, 
+                                  "0"="Glutamatergic_DG_1",
+                                  "1"="Glutamatergic_CA1-do",
+                                  "2"="Oligo_1",
+                                  "3"="GABAergic_Sncg_1",
+                                  "4"="GABAergic_Ntng1 HPF_1",
+                                  "5"="Glutamatergic_SUB",
+                                  "6"="GABAergic_Pax6",
+                                  "7"="Glutamatergic_CA3-do",
+                                  "8"="Oligo-OPC_1",
+                                  "9"="GABAergic_Sncg_2",
+                                  "10"="Glutamatergic_DG_2",
+                                  "11"="Glutamatergic_NP SUB",
+                                  "12"="Astro",
+                                  "13"="Glutamatergic_DG_3",
+                                  "14"="Glutamatergic_L2 IT ENTl",
+                                  "15"="GABAergic_Ntng1 HPF_2",
+                                  "16"="Glutamatergic_Car3",
+                                  "17"="Oligo / Glutamatergic",
+                                  "18"="Micro_1",
+                                  "19"="GABAergic_Lamp5",
+                                  "20"="GABAergic_Sst",
+                                  "21"="Glutamatergic_Mossy",
+                                  "22"="Glutamatergic_L2 IT APr",
+                                  "23"="Glutamatergic_CR",
+                                  "24"="GABAergic_Glutamatergic",
+                                  "25"="GABAergic_Sst_Lamp5_Lhx6",
+                                  "26"="Peri_Endo",
+                                  "27"="Micro_2",
+                                  "28"="Micro_3",
+                                  "29"="Micro_4",
+                                  "30"="Oligo_3",
+                                  "31"="Oligo-OPC_2")
+
+# Plot the UMAP
+DimPlot(object = seurat_integrated, 
+        reduction = "umap", 
+        label = TRUE,
+        label.size = 2,
+        repel = TRUE)
+ggsave("plots/final-plots/UMAP_clusters_relabelled.pdf", height = 6, width = 12)
+
+saveRDS(seurat_integrated, "Rdata/seurat_integrated_cell_labelled.rds")
