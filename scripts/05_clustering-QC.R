@@ -18,7 +18,7 @@ n_cells <- FetchData(seurat_integrated,
 View(n_cells)
 
 n_cells_proportion = n_cells %>%  pivot_longer(!sample, names_to = "clusters", values_to = "count")
-n_cells_proportion$clusters = factor(n_cells_proportion$clusters, levels = c(0:21)) ##changing ggplot x axis order
+n_cells_proportion$clusters = factor(n_cells_proportion$clusters, levels = c(0:(max(as.numeric(seurat_integrated@meta.data$integrated_snn_res.0.3))-1))) ##changing ggplot x axis order
 old = n_cells_proportion %>% filter(sample == "old") %>% mutate(old_norm = count/4)
 young = n_cells_proportion %>% filter(sample == "young") %>% mutate(old_norm = count/3)
 n_cells_proportion = full_join(old, young)
