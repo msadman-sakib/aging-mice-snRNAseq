@@ -447,7 +447,11 @@ get_dds_resultsAvsB <- function(x, A, B){
           ggsave(paste0("DESeq2/pairwise/", clusters[x], "_", levels(cluster_metadata$sample)[A], "_vs_", levels(cluster_metadata$sample)[B], "all_genes_volcanoplot.png"))
           print(paste0("Analysis for ",clusters[x]," done"))
           print("================================")
-          } else print("Heatmap or Volcano plot not made as there is less than 2 significant gene")
+          } else {
+            print("Heatmap or Volcano plot not made as there is less than 2 significant gene")
+            print(paste0("Analysis for ",clusters[x]," done"))
+            print("================================")
+            }
 }
 
 # Run the script on all clusters comparing Old relative to young
