@@ -24,7 +24,8 @@ library(RColorBrewer)
 
 
 # Bring in Seurat object
-seurat = readRDS("Rdata/seurat_integrated_cell_labelled.rds")
+#seurat = readRDS("Rdata/seurat_integrated_cell_labelled.rds")
+seurat = seurat_integrated
 
 # Extract raw counts and metadata to create SingleCellExperiment object
 counts <- seurat@assays$RNA@counts
@@ -42,9 +43,9 @@ sce <- SingleCellExperiment(assays = list(counts = counts),
 groups <- colData(sce)[, c("cluster_id", "orig.ident")] ##sample_id is orig.ident here.
 
 ##Let's create directories for pseudobulk DE analysis
-dir.create("DE_analysis_scrnaseq")
-dir.create("DE_analysis_scrnaseq/data")
-dir.create("DE_analysis_scrnaseq/results")
-dir.create("DE_analysis_scrnaseq/figures")
+# dir.create("DE_analysis_scrnaseq")
+# dir.create("DE_analysis_scrnaseq/data")
+# dir.create("DE_analysis_scrnaseq/results")
+# dir.create("DE_analysis_scrnaseq/figures")
 
 saveRDS(sce, "DE_analysis_scrnaseq/data/scRNA-seq_input_data_for_DE.rds")
