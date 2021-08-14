@@ -81,19 +81,10 @@ for (i in 1:(max(conserved_markers$cluster_id)+1)){
   enriched_top50_human_down_removed[[paste0("cluster_",i)]] <- enriched_top50[[paste0("cluster_",i)]]$Allen_Brain_Atlas_10x_scRNA_2021 %>% filter(!str_detect(Term, "Human")) %>% filter(!str_detect(Term, "down"))
     plotEnrich(as.data.frame(enriched_top50_human_down_removed[[i]]), showTerms = 10, numChar = 50, y = "Count", orderBy = "Adjusted.P.value",title = paste0("top50 human/down removed ","cluster ",i),xlab = "Allen scRNAseq 2021")
     ggsave(paste0("plots/enriched_top50_human_down_removed/","cluster",i,".pdf"), height = 6, width = 7)
-  print(paste0("cluster",i," done"))
+  print(paste0("cluster",i," is done"))
 }
 
 ## It works! Now I have all plots with only the up genes from Allex 10x data! 
-
-
-
-
-
-
-
-
-
 
 ###NOTE: I checked the pdfs, could assign some clusters to some cell types, but this is not exhaustive. Trying another approach:
 ##Source: https://bioconductor.org/books/release/OSCA/cell-type-annotation.html#assigning-cell-labels-from-gene-sets
