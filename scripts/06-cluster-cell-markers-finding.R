@@ -67,10 +67,31 @@ enriched_top50 = list() ##saving outputs of the for loop in a list. To do some w
 # need to loop. Or one can do lapply too. But need to check the syntax.
 for (i in 0:(max(conserved_markers$cluster_id))){
   enriched_top50[[paste0("cluster_",i)]] <- enrichr(top50 %>% select(cluster_id, gene) %>% filter( cluster_id== i) %>%  pull(gene), dbs_Allen_Brain_Atlas_10x_scRNA_2021)
-  plotEnrich(enriched_top50[[paste0("cluster_",i)]]$`Allen_Brain_Atlas_10x_scRNA_2021`, showTerms = 10, numChar = 50, y = "Count", orderBy = "Adjusted.P.value",title = paste0("top50 ","cluster ",i),xlab = "Allen scRNAseq 2021")
-  ggsave(paste0("plots/enrichr_markers_top50/","cluster",i,".pdf"), height = 6, width = 7)
+#  plotEnrich(enriched_top50[[paste0("cluster_",i)]]$`Allen_Brain_Atlas_10x_scRNA_2021`, showTerms = 10, numChar = 50, y = "Count", orderBy = "Adjusted.P.value",title = paste0("top50 ","cluster ",i),xlab = "Allen scRNAseq 2021")
+#  ggsave(paste0("plots/enrichr_markers_top50/","cluster",i,".pdf"), height = 6, width = 7)
   print(paste0("cluster",i," done"))
 }
+
+###Trying to remove the overlapped celltypes that are "Human" and "down"
+###Testing for manipulating one element.
+enriched_top50$cluster_0$Allen_Brain_Atlas_10x_scRNA_2021 %>% filter(!str_detect(Term, "Human")) %>% filter(!str_detect(Term, "down")) %>% view()
+
+enriched_top50_human_down_removed = list()
+for (i in 1:(max(conserved_markers$cluster_id)+1)){
+  enriched_top50_human_down_removed[[paste0("cluster_",i)]] <- enriched_top50[[paste0("cluster_",i)]]$Allen_Brain_Atlas_10x_scRNA_2021 %>% filter(!str_detect(Term, "Human")) %>% filter(!str_detect(Term, "down"))
+    plotEnrich(as.data.frame(enriched_top50_human_down_removed[[i]]), showTerms = 10, numChar = 50, y = "Count", orderBy = "Adjusted.P.value",title = paste0("top50 human/down removed ","cluster ",i),xlab = "Allen scRNAseq 2021")
+    ggsave(paste0("plots/enriched_top50_human_down_removed/","cluster",i,".pdf"), height = 6, width = 7)
+  print(paste0("cluster",i," done"))
+}
+
+## It works! Now I have all plots with only the up genes from Allex 10x data! 
+
+
+
+
+
+
+
 
 
 
