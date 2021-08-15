@@ -1,5 +1,5 @@
 ##Need to manually check what genes corresponds to what celltypes...It needs lot of prior knowledge on marker genes..
-!!!!!!!!!!()###Last would be using AddModule score and check gene list expression...
+#Tip: Use AddModule() score and check multiple gene (in a list) expression...
 
 #Now, loading the outputs from HPC outputs
 library(Seurat)
@@ -67,8 +67,9 @@ enriched_top50 = list() ##saving outputs of the for loop in a list. To do some w
 # need to loop. Or one can do lapply too. But need to check the syntax.
 for (i in 0:(max(conserved_markers$cluster_id))){
   enriched_top50[[paste0("cluster_",i)]] <- enrichr(top50 %>% select(cluster_id, gene) %>% filter( cluster_id== i) %>%  pull(gene), dbs_Allen_Brain_Atlas_10x_scRNA_2021)
-#  plotEnrich(enriched_top50[[paste0("cluster_",i)]]$`Allen_Brain_Atlas_10x_scRNA_2021`, showTerms = 10, numChar = 50, y = "Count", orderBy = "Adjusted.P.value",title = paste0("top50 ","cluster ",i),xlab = "Allen scRNAseq 2021")
-#  ggsave(paste0("plots/enrichr_markers_top50/","cluster",i,".pdf"), height = 6, width = 7)
+ plotEnrich(enriched_top50[[paste0("cluster_",i)]]$`Allen_Brain_Atlas_10x_scRNA_2021`, showTerms = 10, numChar = 50, y = "Count", orderBy = "Adjusted.P.value",title = paste0("top50 ","cluster ",i),xlab = "Allen scRNAseq 2021")
+ #export(enriched_top50[[paste0("cluster_",i)]]$`Allen_Brain_Atlas_10x_scRNA_2021`,paste0("plots/enrichr_markers_top50/","cluster",i,".xlsx") ) #To save the output. Optional for now
+ ggsave(paste0("plots/enrichr_markers_top50/","cluster",i,".pdf"), height = 6, width = 7)
   print(paste0("cluster",i," done"))
 }
 
@@ -77,19 +78,19 @@ for (i in 0:(max(conserved_markers$cluster_id))){
 enriched_top50$cluster_0$Allen_Brain_Atlas_10x_scRNA_2021 %>% filter(!str_detect(Term, "Human")) %>% filter(!str_detect(Term, "down")) %>% view()
 
 enriched_top50_human_down_removed = list()
-for (i in 1:(max(conserved_markers$cluster_id)+1)){
+for (i in 0:(max(conserved_markers$cluster_id))){
   enriched_top50_human_down_removed[[paste0("cluster_",i)]] <- enriched_top50[[paste0("cluster_",i)]]$Allen_Brain_Atlas_10x_scRNA_2021 %>% filter(!str_detect(Term, "Human")) %>% filter(!str_detect(Term, "down"))
-    plotEnrich(as.data.frame(enriched_top50_human_down_removed[[i]]), showTerms = 10, numChar = 50, y = "Count", orderBy = "Adjusted.P.value",title = paste0("top50 human/down removed ","cluster ",i),xlab = "Allen scRNAseq 2021")
+    plotEnrich(as.data.frame(enriched_top50_human_down_removed[[paste0("cluster_",i)]]), showTerms = 10, numChar = 50, y = "Count", orderBy = "Adjusted.P.value",title = paste0("top50 human/down removed ","cluster ",i),xlab = "Allen scRNAseq 2021")
     ggsave(paste0("plots/enriched_top50_human_down_removed/","cluster",i,".pdf"), height = 6, width = 7)
   print(paste0("cluster",i," is done"))
 }
 
-## It works! Now I have all plots with only the up genes from Allex 10x data! 
+## It works! Now I have all plots with only the up genes from Allex 10x data! It does give proper labelling, but the cluster output names are shifted by 1 as I made the for loop like that! Bug! Need to fix! And Fixed now.
+
 
 ###NOTE: I checked the pdfs, could assign some clusters to some cell types, but this is not exhaustive. Trying another approach:
 ##Source: https://bioconductor.org/books/release/OSCA/cell-type-annotation.html#assigning-cell-labels-from-gene-sets
 # Tried but complicated...
-
 ##Trying this to find the cell types 
 # 1. Run the EnrichR for top20 and top30 marker genes with for loop and save them in a list. Then clean the lists and keep only the dataframes for the enrichr outputs with cell types for each clusters.
 # 2. Do overlap for cluster by cluster and find which cluster has the same cell types between top20 and top30 enriched lists.
@@ -128,9 +129,12 @@ allen.genelist.human = names(allen.genelist) %>%
 # Major NOTE!!!!!:::
 # So, I took the top significant from Enrichr(using top50 genes per cluster), then used the supplemental file from the paper (https://www.sciencedirect.com/science/article/pii/S0092867421005018, it is in data/Allen_ref_clusters_10.1016-j.cell.2021.04.021.xlsx) and grabbed the cluster details. For now, I focused on the types of cells like gabaergic, glutametargic etc...But there were something weird. I saved the note in a text file in data folder. read it if needed!!
 
-#Then made the excel file that I am loading down below...
+##14 August 2021
+# I tried using Enrichr to find proper cell markers to label them. But seems futile (Check scripts/comments on top). I will now try using very well known marker genes to label clusters. 
 
-clusterID.allen = import("data/manual-top50-celltype-cluster.xlsx")
+
+#Then made the excel file that I am loading down below...
+clusterID.allen = import("data/for-renaming-cluster-manual-top50-celltype-cluster.xlsx")
 
 #load seurat integrated dataset. 
 seurat_integrated = readRDS("Rdata/seurat_integrated_PC40_res0.3.rds")
