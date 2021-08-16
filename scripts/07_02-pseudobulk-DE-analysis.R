@@ -158,9 +158,9 @@ splitf <- sapply(stringr::str_split(rownames(pb),
 # Turn into a list and split the list into components for each cluster and transform, so rows are genes and columns are samples and make rownames as the sample IDs
 pb <- split.data.frame(pb, 
                        factor(splitf)) %>%
-  lapply(function(u) 
-    set_colnames(t(u), 
-                 stringr::str_extract(rownames(u), "(?<=_)[:alnum:]+")))
+                          lapply(function(u) 
+                          set_colnames(t(u), 
+                          stringr::str_extract(rownames(u), "(?<=_)[:alnum:]+")))
 
 class(pb)
 
@@ -205,90 +205,92 @@ metadata <- gg_df %>%
 
 metadata        
 
-# Subsetting dataset to cluster(s) of interest, as an example, for the first cluster in the list, Astrocytes -----------------------------------
 # Generate vector of cluster IDs
 clusters <- levels(as.factor(metadata$cluster_id))
 clusters
-clusters[1]
 
-# Subset the metadata to only the Astrocytes
-cluster_metadata <- metadata[which(metadata$cluster_id == clusters[1]), ]
-head(cluster_metadata)
-
-# Assign the rownames of the metadata to be the sample IDs
-rownames(cluster_metadata) <- cluster_metadata$conditon_replicate
-head(cluster_metadata)
-
-# Subset the counts to only the Astrocytes
-counts <- pb[[clusters[1]]]
-
-cluster_counts <- data.frame(counts[, which(colnames(counts) %in% rownames(cluster_metadata))])
-
-# Check that all of the row names of the metadata are the same and in the same order as the column names of the counts in order to use as input to DESeq2
-all(rownames(cluster_metadata) == colnames(cluster_counts))
-
-# Create DESeq2 object ----------------------------------------------------------------
-dds <- DESeqDataSetFromMatrix(cluster_counts, 
-                              colData = cluster_metadata, 
-                              design = ~ sample)
-
-## Principal component analysis
-# Transform counts for data visualization
-rld <- rlog(dds, blind=TRUE)
-
-# Plot PCA
-DESeq2::plotPCA(rld, intgroup = "conditon_replicate" ) + ggtitle("Astrocytes")
-ggsave("DE_analysis_scrnaseq/figures/deseq2-astrocytes-pca.pdf", height = 5, width = 6)
-
-## Hierarchical clustering
-# Extract the rlog matrix from the object and compute pairwise correlation values
-rld_mat <- assay(rld)
-rld_cor <- cor(rld_mat)
-
-# Plot heatmap
-pheatmap(rld_cor, annotation = cluster_metadata[, c("sample"), drop=F])
-
-# Run DESeq2 differential expression analysis
-dds <- DESeq(dds)
-
-# Plot dispersion estimates
-plotDispEsts(dds)
-
-cluster_metadata$sample = as.factor(cluster_metadata$sample)
-
-# Results ---------------------------------------------------------------------------------------------------
-# Output results of Wald test for contrast for old vs young 
-levels(cluster_metadata$sample)[2] ## Young
-levels(cluster_metadata$sample)[1] ## Old
-
-contrast <- c("sample", levels(cluster_metadata$sample)[1], levels(cluster_metadata$sample)[2])
-
-# resultsNames(dds)
-res <- results(dds, 
-               contrast = contrast,
-               alpha = 0.1) ###Changing to padj <0.1
-
-res <- lfcShrink(dds, 
-                 coef =  "sample_young_vs_old",
-                 type = "apeglm")
-
-# Table of results for all genes --------------------------------------------------------------------------------
-
-# Turn the results object into a tibble for use with tidyverse functions
-res_tbl <- res %>%
-  data.frame() %>%
-  rownames_to_column(var="gene") %>%
-  as_tibble()
-# No significant genes were found, atleast in Astrocytes... It might be due to the old samples that converge with the youngs...
-
+# # #----------------------Test chunk-----------#
+# # # Subsetting dataset to cluster(s) of interest, as an example, for the first cluster in the list, Astrocytes -----------------------------------
+# # # Subset the metadata to only the Astrocytes
+# # cluster_metadata <- metadata[which(metadata$cluster_id == clusters[1]), ]
+# # head(cluster_metadata)
+# # 
+# # # Assign the rownames of the metadata to be the sample IDs
+# # rownames(cluster_metadata) <- cluster_metadata$conditon_replicate
+# # head(cluster_metadata)
+# # 
+# # # Subset the counts to only the Astrocytes
+# # counts <- pb[[clusters[1]]]
+# # 
+# # cluster_counts <- data.frame(counts[, which(colnames(counts) %in% rownames(cluster_metadata))])
+# # 
+# # # Check that all of the row names of the metadata are the same and in the same order as the column names of the counts in order to use as input to DESeq2
+# # all(rownames(cluster_metadata) == colnames(cluster_counts))
+# 
+# # Create DESeq2 object ----------------------------------------------------------------
+# dds <- DESeqDataSetFromMatrix(cluster_counts, 
+#                               colData = cluster_metadata, 
+#                               design = ~ sample)
+# 
+# ## Principal component analysis
+# # Transform counts for data visualization
+# rld <- rlog(dds, blind=TRUE)
+# 
+# # Plot PCA
+# DESeq2::plotPCA(rld, intgroup = "conditon_replicate" ) + ggtitle("Astrocytes")
+# ggsave("DE_analysis_scrnaseq/figures/deseq2-astrocytes-pca.pdf", height = 5, width = 6)
+# 
+# ## Hierarchical clustering
+# # Extract the rlog matrix from the object and compute pairwise correlation values
+# rld_mat <- assay(rld)
+# rld_cor <- cor(rld_mat)
+# 
+# # Plot heatmap
+# pheatmap(rld_cor, annotation = cluster_metadata[, c("sample"), drop=F])
+# 
+# # Run DESeq2 differential expression analysis
+# dds <- DESeq(dds)
+# 
+# # Plot dispersion estimates
+# plotDispEsts(dds)
+# 
+# cluster_metadata$sample = as.factor(cluster_metadata$sample)
+# 
+# # Results ---------------------------------------------------------------------------------------------------
+# # Output results of Wald test for contrast for old vs young 
+# levels(cluster_metadata$sample)[2] ## Young
+# levels(cluster_metadata$sample)[1] ## Old
+# 
+# contrast <- c("sample", levels(cluster_metadata$sample)[1], levels(cluster_metadata$sample)[2])
+# 
+# # resultsNames(dds)
+# res <- results(dds, 
+#                contrast = contrast,
+#                alpha = 0.1) ###Changing to padj <0.1
+# 
+# res <- lfcShrink(dds, 
+#                  coef =  "sample_young_vs_old",
+#                  type = "apeglm")
+# 
+# # Table of results for all genes --------------------------------------------------------------------------------
+# 
+# # Turn the results object into a tibble for use with tidyverse functions
+# res_tbl <- res %>%
+#   data.frame() %>%
+#   rownames_to_column(var="gene") %>%
+#   as_tibble()
+# # No significant genes were found, atleast in Astrocytes... It might be due to the old samples that converge with the youngs...
+# 
 
 
 ##################################################################################################################################################################################################################
 ##################################################################################################################################################################################################################
 ##################################################################################################################################################################################################################
+#----------------------Test chunk end-----------#
+
 ##Now, continuing for all the clusters....
-dir.create("DESeq2")
-dir.create("DESeq2/pairwise")
+# dir.create("DESeq2")
+# dir.create("DESeq2/pairwise")
 
 # Function to run DESeq2 and get results for all clusters
 ## x is index of cluster in clusters vector on which to run function
@@ -313,15 +315,14 @@ get_dds_resultsAvsB <- function(x, A, B){
   # Plot PCA
   
   DESeq2::plotPCA(rld, intgroup = "sample")
-  ggsave(paste0("results/", clusters[x], "_specific_PCAplot.png"))
-  
+  ggsave(paste0("DE_analysis_scrnaseq/figures/", clusters[x], "_specific_PCAplot.png"))
   
   # Extract the rlog matrix from the object and compute pairwise correlation values
   rld_mat <- assay(rld)
   rld_cor <- cor(rld_mat)
   
   # Plot heatmap
-  png(paste0("results/", clusters[x], "_specific_heatmap.png"))
+  png(paste0("DE_analysis_scrnaseq/figures/", clusters[x], "_specific_heatmap.png"))
   pheatmap(rld_cor, annotation = cluster_metadata[, c("sample"), drop=F])
   dev.off()
   
@@ -329,7 +330,7 @@ get_dds_resultsAvsB <- function(x, A, B){
   dds <- DESeq(dds)
   
   # Plot dispersion estimates
-  png(paste0("results/", clusters[x], "_dispersion_plot.png"))
+  png(paste0("DE_analysis_scrnaseq/figures/", clusters[x], "_dispersion_plot.png"))
   plotDispEsts(dds)
   dev.off()
   
@@ -354,7 +355,7 @@ get_dds_resultsAvsB <- function(x, A, B){
     as_tibble()
   
   write.csv(res_tbl,
-            paste0("DESeq2/pairwise/", clusters[x], "_", levels(cluster_metadata$sample)[A], "_vs_", levels(cluster_metadata$sample)[B], "_all_genes.csv"),
+            paste0("DE_analysis_scrnaseq/results/", clusters[x], "_", levels(cluster_metadata$sample)[A], "_vs_", levels(cluster_metadata$sample)[B], "_all_genes.csv"),
             quote = FALSE, 
             row.names = FALSE)
   
@@ -363,7 +364,7 @@ get_dds_resultsAvsB <- function(x, A, B){
     dplyr::arrange(padj)
   
   write.csv(sig_res,
-            paste0("DESeq2/pairwise/", clusters[x], "_", levels(cluster_metadata$sample)[A], "_vs_", levels(cluster_metadata$sample)[B], "_sig_genes.csv"),
+            paste0("DE_analysis_scrnaseq/results/", clusters[x], "_", levels(cluster_metadata$sample)[A], "_vs_", levels(cluster_metadata$sample)[B], "_sig_genes.csv"),
             quote = FALSE, 
             row.names = FALSE)
   
@@ -400,7 +401,7 @@ get_dds_resultsAvsB <- function(x, A, B){
     theme_bw() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
     theme(plot.title = element_text(hjust = 0.5))
-  ggsave(paste0("DESeq2/pairwise/", clusters[x], "_", levels(cluster_metadata$sample)[A], "_vs_", levels(cluster_metadata$sample)[B], "_top20_DE_genes.png"))
+  ggsave(paste0("DE_analysis_scrnaseq/results/", clusters[x], "_", levels(cluster_metadata$sample)[A], "_vs_", levels(cluster_metadata$sample)[B], "_top20_DE_genes.png"))
   
   if(nrow(sig_res)>=2) { ####add this condition for heatmap and volcano plot
   
@@ -414,7 +415,7 @@ get_dds_resultsAvsB <- function(x, A, B){
           heat_colors <- brewer.pal(6, "YlOrRd")
           
           # Run pheatmap using the metadata data frame for the annotation
-          png(paste0("DESeq2/pairwise/", clusters[x], "_", levels(cluster_metadata$sample)[A], "_vs_", levels(cluster_metadata$sample)[B], "all_genes_heatmap.png"),width = 1200, height = 1000, res = 150)
+          png(paste0("DE_analysis_scrnaseq/results/", clusters[x], "_", levels(cluster_metadata$sample)[A], "_vs_", levels(cluster_metadata$sample)[B], "all_genes_heatmap.png"),width = 1200, height = 1000, res = 150)
           pheatmap(sig_norm[ , 2:length(colnames(sig_norm))], 
                    color = heat_colors, 
                    cluster_rows = T, 
@@ -426,7 +427,7 @@ get_dds_resultsAvsB <- function(x, A, B){
                    fontsize_row = 10, 
                    height = 20)        
           dev.off()
-          #ggsave(paste0("DESeq2/pairwise/", clusters[x], "_", levels(cluster_metadata$sample)[A], "_vs_", levels(cluster_metadata$sample)[B], "all_genes_heatmap.png"))
+          #ggsave(paste0("DE_analysis_scrnaseq/results/", clusters[x], "_", levels(cluster_metadata$sample)[A], "_vs_", levels(cluster_metadata$sample)[B], "all_genes_heatmap.png"))
           
           #Volcano plot 
           
@@ -444,7 +445,7 @@ get_dds_resultsAvsB <- function(x, A, B){
             theme(legend.position = "none",
                   plot.title = element_text(size = rel(1.5), hjust = 0.5),
                   axis.title = element_text(size = rel(1.25)))                    
-          ggsave(paste0("DESeq2/pairwise/", clusters[x], "_", levels(cluster_metadata$sample)[A], "_vs_", levels(cluster_metadata$sample)[B], "all_genes_volcanoplot.png"))
+          ggsave(paste0("DE_analysis_scrnaseq/results/", clusters[x], "_", levels(cluster_metadata$sample)[A], "_vs_", levels(cluster_metadata$sample)[B], "all_genes_volcanoplot.png"))
           print(paste0("Analysis for ",clusters[x]," done"))
           print("================================")
           } else {
