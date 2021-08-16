@@ -117,8 +117,9 @@ ggsave("plots/final-plots/UMAP_clusters_relabelled_EnrichR.pdf", height = 6, wid
 
 # Checking with our gene lists
 ##For AddModuleScore fuction
-#DefaultAssay(seurat_integrated) = "RNA"
+DefaultAssay(seurat_integrated) = "RNA"
 
+#Wrangling our marker gene lists
 filelist = list.files("marker_genelist", full.names = T)
 marker.genelist = lapply(filelist, function(x)read_table(x,col_names = F))
 names(marker.genelist) = tools::file_path_sans_ext(basename(filelist))
@@ -138,10 +139,84 @@ for(i in 1:length(marker.genelist)){
 for(i in 1:length(marker.genelist)){
 seurat_integrated <- AddModuleScore(object = seurat_integrated, features = marker.genelist[i], name = names(marker.genelist)[i])
 VlnPlot(seurat_integrated, features = paste0(names(marker.genelist)[i],"1"), pt.size = 0) 
-ggsave(paste0("plots/our-marker-gene-lists/",names(marker.genelist)[i],"1-vln.pdf"))
-FeaturePlot(object = seurat_integrated, features = paste0(names(marker.genelist)[i],"1"), reduction = "umap", order = TRUE, min.cutoff = 'q10', label = TRUE)
-ggsave(paste0("plots/our-marker-gene-lists/",names(marker.genelist)[i],"1-Feat.pdf"))
+ggsave(paste0("plots/our-marker-gene-lists/",names(marker.genelist)[i],"1-vln.pdf"), height = 5, width = 8)
+FeaturePlot(object = seurat_integrated, features = paste0(names(marker.genelist)[i],"1"), reduction = "umap", order = TRUE, label = TRUE, repel = TRUE)
+ggsave(paste0("plots/our-marker-gene-lists/",names(marker.genelist)[i],"1-Feat.pdf"), height = 6, width = 7)
 }
+
+#NOTE: Our marker gene lists overlaps nicely with what I have found using enrichR analysis. Now, need to manually check some genes to finalise the labels. 
+FeaturePlot(seurat_integrated, features = c("Sst", "Lamp5", "Gad2", "Neurod6", "Slc17a7", "Spi1"))
+ggsave("plots/our-marker-gene-lists/single-marker-genes.pdf",height = 10, width = 7)
+#for single gene checking, use the following line:
+FeaturePlot(seurat_integrated, features = c("Pecam1"))#, label = T, repel = T)
+
+#NOTE:
+#After examining with both ALlen 10x markers with EnrichR and our own marker genes(this helped to mark the excitatory, inhibitory, DG, CA1,CA3 regions), now, I made a table in Excel file (for-renaming-cluster-manual-top50-celltype-cluster.xlsx, sheet: "3rd both allen and our list") to label the clusters. 
+
+
+# #load unlabelled seurat integrated dataset.
+seurat_integrated = readRDS("Rdata/seurat_integrated_PC40_res0.3.rds")
+
+# Rename all identities, using the table from excel
+seurat_integrated <- RenameIdents(object = seurat_integrated,
+                                  "0"="DG neurons",
+                                  "1"="CA1 neurons",
+                                  "2"="Oligodendrocytes",
+                                  "3"="CA1 neurons",
+                                  "4"="CA3 neurons",
+                                  "5"="Inhibitory Interneurons",
+                                  "6"="CA1 neurons",
+                                  "7"="Excitatory neurons",
+                                  "8"="OPC",
+                                  "9"="CA3 neurons",
+                                  "10"="DG neurons",
+                                  "11"="Excitatory neurons",
+                                  "12"="Astrocytes",
+                                  "13"="Excitatory neurons",
+                                  "14"="Inhibitory Interneurons",
+                                  "15"="Inhibitory Interneurons",
+                                  "16"="Inhibitory Interneurons",
+                                  "17"="DG neurons",
+                                  "18"="Microglia",
+                                  "19"="CA1 neurons",
+                                  "20"="CA2 neurons",
+                                  "21"="CA3 neurons",
+                                  "22"="Excitatory neurons",
+                                  "23"="Cajal Retzius cells",
+                                  "24"="Ex-In neurons",
+                                  "25"="CA1 neurons",
+                                  "26"="Pericytes-Endothelial cells",
+                                  "27"="Microglia",
+                                  "28"="Microglia",
+                                  "29"="Microglia",
+                                  "30"="Oligodendrocytes",
+                                  "31"="OPC")
+
+# Plot the UMAP
+DimPlot(object = seurat_integrated,
+        reduction = "umap",
+        label = TRUE,
+        label.size = 4,
+        repel = TRUE,
+        seed = 16082021)
+ggsave("plots/final-plots/UMAP_clusters_relabelled_final.pdf", height = 6, width = 8)
+saveRDS(seurat_integrated, "Rdata/seurat_integrated_cell_labelled_final.rds")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 #-------------Old chunck------------#
