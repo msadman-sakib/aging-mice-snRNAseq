@@ -202,6 +202,26 @@ DimPlot(object = seurat_integrated,
 ggsave("plots/final-plots/UMAP_clusters_relabelled_final.pdf", height = 6, width = 8)
 saveRDS(seurat_integrated, "Rdata/seurat_integrated_cell_labelled_final.rds")
 
+###----Making differnetial abundance plot------#
+#seurat_integrated = readRDS("Rdata/seurat_integrated_cell_labelled_final.rds")
+
+n_cells <- FetchData(seurat_integrated, 
+                     vars = c("ident", "sample" )) %>%
+  dplyr::count(ident, sample) %>%
+  tidyr::spread(ident, n)
+
+# View table
+View(n_cells)
+
+n_cells_proportion = n_cells %>%  pivot_longer(!sample, names_to = "clusters", values_to = "count")
+#n_cells_proportion$clusters = factor(n_cells_proportion$clusters, levels = c(0:(max(as.numeric(seurat_integrated@meta.data$integrated_snn_res.0.3))-1))) ##changing ggplot x axis order
+old = n_cells_proportion %>% filter(sample == "old") %>% mutate(old_norm = count/4)
+young = n_cells_proportion %>% filter(sample == "young") %>% mutate(old_norm = count/3)
+n_cells_proportion = full_join(old, young)
+n_cells_proportion =n_cells_proportion %>% rename(norm.count = old_norm)
+ggplot(n_cells_proportion, aes(x = clusters, y = norm.count, fill = sample)) + geom_col(position = "fill") + geom_hline(yintercept=0.5, linetype="dashed", color = "black", size = 1) + theme(axis.text.x = element_text(face = "bold", size = 12, angle = 45, hjust = 1))
+  
+ggsave("plots/final-plots/cluster_proportions-Normed-young-old.pdf", width = 10, height = 7) ##But I have also generated unnormed proportions. Check that as well.
 
 
 
