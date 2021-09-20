@@ -21,6 +21,7 @@ library(apeglm)
 library(png)
 library(DESeq2)
 library(RColorBrewer)
+library(RUVSeq)
 
 sce = readRDS("DE_analysis_scrnaseq/data/scRNA-seq_input_data_for_DE.rds")
 
@@ -304,11 +305,15 @@ get_dds_resultsAvsB <- function(x, A, B){
   cluster_counts <- data.frame(counts[, which(colnames(counts) %in% rownames(cluster_metadata))])
   
   #all(rownames(cluster_metadata) == colnames(cluster_counts))        
+  cluster_metadata$sample = factor(cluster_metadata$sample)
+  control = levels(cluster_metadata$sample)[B]
+  treatment = levels(cluster_metadata$sample)[A]
+  cluster_metadata$sample = relevel(cluster_metadata$sample, ref = levels(cluster_metadata$sample)[B]) ##here, B=2 is the control/untreated/baseline. after releveling, the untreated/control/young goes to the first position in the factor levels. This will be automatically used by DESeq2 to generate the comparisons and the correct coef. coef will be used in lfcShrink() function down below. Since contrast argument is deprecated and no supported, I had to change the code like this here. 
   
-  dds <- DESeqDataSetFromMatrix(cluster_counts, 
-                                colData = cluster_metadata, 
+  dds <- DESeqDataSetFromMatrix(cluster_counts,
+                                colData = cluster_metadata,
                                 design = ~ sample)
-  
+
   # Transform counts for data visualization
   rld <- rlog(dds, blind=TRUE)
   
@@ -335,16 +340,27 @@ get_dds_resultsAvsB <- function(x, A, B){
   dev.off()
   
   # Output results of Wald test for contrast for A vs B
-  #contrast_A_B <- c("sample", levels(cluster_metadata$sample)[A], levels(cluster_metadata$sample)[B])
-  
+
   # resultsNames(dds)
-  res <- results(dds, 
-                 #contrast = contrast_A_B,
-                 alpha = 0.1) #chanign to 0.1
+  res <- results(dds, alpha = 0.1)
   
-  res <- lfcShrink(dds, 
-                   coef =  "sample_young_vs_old", ###I had to hardcode here to make the code run. Be careful next time. 
-                   type = "apeglm")
+  res <- lfcShrink(dds, coef = resultsNames(dds)[2]  ,res=res) ##here, the 2 means the coef, not the A, B!!!
+  
+  ############ Legacy chunk#####################################
+  # # Output results of Wald test for contrast for A vs B
+  # #contrast_A_B <- c("sample", levels(cluster_metadata$sample)[A], levels(cluster_metadata$sample)[B])
+  # 
+  # # resultsNames(dds)
+  # res <- results(dds, 
+  #                #contrast = contrast_A_B,
+  #                alpha = 0.1) #chanign to 0.1
+  # 
+  # res <- lfcShrink(dds, 
+  #                  coef =  "sample_young_vs_old", ###I had to hardcode here to make the code run. Be careful next time. 
+  #                  type = "apeglm")
+  # 
+  ############ Legacy chunk ends ################################
+  
   # Set thresholds
   padj_cutoff <- 0.1 #Set up cutoff.
   
@@ -355,7 +371,7 @@ get_dds_resultsAvsB <- function(x, A, B){
     as_tibble()
   
   write.csv(res_tbl,
-            paste0("DE_analysis_scrnaseq/results/", clusters[x], "_", levels(cluster_metadata$sample)[A], "_vs_", levels(cluster_metadata$sample)[B], "_all_genes.csv"),
+            paste0("DE_analysis_scrnaseq/results/", clusters[x], "_", treatment, "_vs_", control, "_all_genes.csv"),
             quote = FALSE, 
             row.names = FALSE)
   
@@ -364,7 +380,7 @@ get_dds_resultsAvsB <- function(x, A, B){
     dplyr::arrange(padj)
   
   write.csv(sig_res,
-            paste0("DE_analysis_scrnaseq/results/", clusters[x], "_", levels(cluster_metadata$sample)[A], "_vs_", levels(cluster_metadata$sample)[B], "_sig_genes.csv"),
+            paste0("DE_analysis_scrnaseq/results/", clusters[x], "_", treatment, "_vs_", control, "_sig_genes.csv"),
             quote = FALSE, 
             row.names = FALSE)
   
@@ -401,9 +417,9 @@ get_dds_resultsAvsB <- function(x, A, B){
     theme_bw() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
     theme(plot.title = element_text(hjust = 0.5))
-  ggsave(paste0("DE_analysis_scrnaseq/results/", clusters[x], "_", levels(cluster_metadata$sample)[A], "_vs_", levels(cluster_metadata$sample)[B], "_top20_DE_genes.png"))
+  ggsave(paste0("DE_analysis_scrnaseq/results/", clusters[x], "_", treatment, "_vs_", control, "_top20_DE_genes.png"))
   
-  if(nrow(sig_res)>=2) { ####add this condition for heatmap and volcano plot
+  if(nrow(sig_res)>=2) { ####added this condition for heatmap and volcano plot
   
           #Heatmap
           # Extract normalized counts for only the significant genes
@@ -415,7 +431,7 @@ get_dds_resultsAvsB <- function(x, A, B){
           heat_colors <- brewer.pal(6, "YlOrRd")
           
           # Run pheatmap using the metadata data frame for the annotation
-          png(paste0("DE_analysis_scrnaseq/results/", clusters[x], "_", levels(cluster_metadata$sample)[A], "_vs_", levels(cluster_metadata$sample)[B], "all_genes_heatmap.png"),width = 1200, height = 1000, res = 150)
+          png(paste0("DE_analysis_scrnaseq/results/", clusters[x], "_", treatment, "_vs_", control, "all_genes_heatmap.png"),width = 1200, height = 1000, res = 150)
           pheatmap(sig_norm[ , 2:length(colnames(sig_norm))], 
                    color = heat_colors, 
                    cluster_rows = T, 
@@ -445,7 +461,7 @@ get_dds_resultsAvsB <- function(x, A, B){
             theme(legend.position = "none",
                   plot.title = element_text(size = rel(1.5), hjust = 0.5),
                   axis.title = element_text(size = rel(1.25)))                    
-          ggsave(paste0("DE_analysis_scrnaseq/results/", clusters[x], "_", levels(cluster_metadata$sample)[A], "_vs_", levels(cluster_metadata$sample)[B], "all_genes_volcanoplot.png"))
+          ggsave(paste0("DE_analysis_scrnaseq/results/", clusters[x], "_", treatment, "_vs_", control, "all_genes_volcanoplot.png"))
           print(paste0("Analysis for ",clusters[x]," done"))
           print("================================")
           } else {
@@ -457,10 +473,77 @@ get_dds_resultsAvsB <- function(x, A, B){
 
 # Run the script on all clusters comparing Old relative to young
 # I tried with 0.05. But now trying with 0.1
-map(1:length(clusters), get_dds_resultsAvsB, A = 1, B = 2)
+#map(1:length(clusters), get_dds_resultsAvsB, A = 1, B = 2)
+map(1:2, get_dds_resultsAvsB, A = 1, B = 2) ###A =  treatment/aged etc., B = untreated/Control/young etc. 
 
 
+#--------------- Test chunk ---------------#
+# cluster_metadata <- metadata[which(metadata$cluster_id == clusters[1]), ]
+# rownames(cluster_metadata) <- cluster_metadata$conditon_replicate
+# counts <- pb[[clusters[1]]]
+# cluster_counts <- data.frame(counts[, which(colnames(counts) %in% rownames(cluster_metadata))])
+# ####################################
+# cluster_metadata$sample=as.factor(cluster_metadata$sample)
+# #all(rownames(cluster_metadata) == colnames(cluster_counts))        
+# set <- newSeqExpressionSet(as.matrix(cluster_counts),phenoData = data.frame(cluster_metadata$sample,  row.names=colnames(cluster_counts)))
+# 
+# #####remove unwanted variation using replicate samples
+# differences=makeGroups(cluster_metadata$sample)
+# set2=RUVs(set, rownames(cluster_counts), k=1, differences)
+# set2.metadata = pData(set2)
+# cluster_metadata$W_1 = set2.metadata$W_1
+# dds <- DESeqDataSetFromMatrix(countData = counts(set2), colData = cluster_metadata,  design=~W_1 + sample) ##W_1 comes from RUVseq
+#--------------- Test chunk end---------------#
 
+
+#####TEST########
+
+cluster_metadata <- metadata[which(metadata$cluster_id == clusters[2]), ]
+rownames(cluster_metadata) <- cluster_metadata$conditon_replicate
+counts <- pb[[clusters[2]]]
+cluster_counts <- data.frame(counts[, which(colnames(counts) %in% rownames(cluster_metadata))])
+
+#all(rownames(cluster_metadata) == colnames(cluster_counts))        
+cluster_metadata$sample = factor(cluster_metadata$sample)
+control = levels(cluster_metadata$sample)[2]
+treatment = levels(cluster_metadata$sample)[1]
+cluster_metadata$sample = relevel(cluster_metadata$sample, ref = levels(cluster_metadata$sample)[2]) ##here, 2 is the control/untreated/baseline. Now it is in first position. 
+
+dds <- DESeqDataSetFromMatrix(cluster_counts,
+                              colData = cluster_metadata,
+                              design = ~ sample)
+
+# Run DESeq2 differential expression analysis
+dds <- DESeq(dds)
+resultsNames(dds)
+
+# Output results of Wald test for contrast for A vs B
+res <- results(dds, alpha = 0.1)
+
+res <- lfcShrink(dds, coef = resultsNames(dds)[2]  ,res=res) ##here, the 2 means the coef, not the A, B!!!
+
+# Set thresholds
+padj_cutoff <- 0.1 #Set up cutoff.
+
+# Turn the results object into a tibble for use with tidyverse functions
+res_tbl <- res %>%
+  data.frame() %>%
+  rownames_to_column(var="gene") %>%
+  as_tibble()
+
+write.csv(res_tbl,
+          paste0("DE_analysis_scrnaseq/results/", clusters[2], "_", treatment, "_vs_", control, "_all_genes.csv"),
+          quote = FALSE, 
+          row.names = FALSE)
+
+# Subset the significant results
+sig_res <- dplyr::filter(res_tbl, padj < padj_cutoff) %>%
+  dplyr::arrange(padj)
+
+write.csv(sig_res,
+          paste0("DE_analysis_scrnaseq/results/", clusters[6], "_", levels(cluster_metadata$sample)[1], "_vs_", levels(cluster_metadata$sample)[2], "_sig_genes.csv"),
+          quote = FALSE, 
+          row.names = FALSE)
 
 
 
